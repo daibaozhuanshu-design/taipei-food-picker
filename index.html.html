@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>雙北今天吃什麼？跨裝置美食定位與隨機決策器</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script>
+    // 配置 Tailwind 色彩、字體與深淺色模式
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              300: '#fcd34d',
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+            },
+            accent: {
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+            },
+            surface: {
+              950: '#070b14',
+              900: '#0e1525',
+              850: '#151f34',
+              800: '#1d2942',
+              700: '#2d3d5e',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* 自訂捲軸樣式，兼顧深淺色模式清晰度 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.32); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.52); }
+
+    /* 尊重系統減少動態效果偏好 */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 dark:bg-surface-950 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-slate-950 pb-28 lg:pb-12 transition-colors duration-200">
+
+  <!-- 頂部導覽列 -->
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-surface-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-400 via-accent-500 to-amber-600 text-slate-950 flex items-center justify-center shadow-lg shadow-brand-500/25 shrink-0">
+          <i class="fa-solid fa-location-dot text-lg"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white truncate">雙北今天吃什麼？</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-brand-500/15 text-amber-700 dark:text-brand-400 border border-brand-500/30">
+              精準定位・雙北 41 區
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 truncate">電腦・iPhone・Android 網頁版｜主餐・甜點冰品・手搖飲・宵夜決策器</p>
+        </div>
+      </div>
+
+      <!-- 頂部功能按鈕列 -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <button id="btnToggleTheme" type="button" aria-label="切換深色或淺色主題" title="切換深色 / 淺色主題"
+          class="p-2.5 rounded-xl bg-slate-100 dark:bg-surface-800 hover:bg-slate-200 dark:hover:bg-surface-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/80 transition active:scale-95 text-xs sm:text-sm flex items-center gap-1.5">
+          <i id="themeIcon" class="fa-solid fa-moon text-brand-500"></i>
+          <span id="themeLabel" class="hidden md:inline">深色</span>
+        </button>
+
+        <button id="btnToggleSound" type="button" aria-label="切換音效開關" title="音效開關"
+          class="p-2.5 rounded-xl bg-slate-100 dark:bg-surface-800 hover:bg-slate-200 dark:hover:bg-surface-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/80 transition active:scale-95 text-xs sm:text-sm flex items-center gap-1.5">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-brand-500"></i>
+          <span id="soundLabel" class="hidden md:inline">音效開</span>
+        </button>
+
+        <button id="btnFullscreen" type="button" aria-label="全螢幕切換" title="全螢幕切換"
+          class="p-2.5 rounded-xl bg-slate-100 dark:bg-surface-800 hover:bg-slate-200 dark:hover:bg-surface-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/80 transition active:scale-95 text-xs sm:text-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-expand"></i>
+          <span class="hidden lg:inline">全螢幕</span>
+        </button>
+
+        <button id="btnCopySource" type="button" aria-label="複製完整 HTML 原始碼" title="複製完整 HTML 程式碼"
+          class="p-2.5 sm:px-3 rounded-xl bg-slate-100 dark:bg-surface-800 hover:bg-slate-200 dark:hover:bg-surface-700 text-slate-700 dark:text-slate-200 hover:text-amber-600 dark:hover:text-brand-400 border border-slate-200 dark:border-slate-700/80 transition active:scale-95 text-xs sm:text-sm font-semibold flex items-center gap-1.5">
+          <i class="fa-regular fa-copy"></i>
+          <span class="hidden sm:inline">複製原始碼</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 全域 Toast 提示容器（含防重複冷卻控制） -->
+  <div id="toastContainer" role="status" aria-live="polite" class="fixed top-20 right-4 sm:right-6 z-50 pointer-events-none flex flex-col items-end gap-2 w-11/12 max-w-sm"></div>
+
+  <!-- 主內容區 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-6 space-y-5 sm:space-y-6">
+
+    <!-- 區塊 1：高精準度定位與雙北 41 區控制中心 -->
+    <section class="bg-white dark:bg-surface-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-lg dark:shadow-xl space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+        <!-- 左側定位狀態 -->
+        <div class="lg:col-span-6 flex items-start sm:items-center gap-4">
+          <div id="geoIconBox" class="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <i id="geoIcon" class="fa-solid fa-location-crosshairs text-xl"></i>
+          </div>
+          <div class="min-w-0 flex-1 space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span id="geoModeBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-500/15 text-amber-700 dark:text-brand-400 border border-brand-500/30">
+                手動行政區基準座標
+              </span>
+              <span id="geoAccuracyBadge" class="hidden inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                ±0m
+              </span>
+              <span id="geoHighlightBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-surface-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-full">
+                內科瑞光路・737巷夜市・西湖美食圈
+              </span>
+            </div>
+            <h2 id="geoTitle" class="text-lg sm:text-xl font-black text-slate-900 dark:text-white truncate">
+              台北市 內湖區
+            </h2>
+            <p id="geoSubInfo" class="text-xs text-slate-500 dark:text-slate-400 font-mono">
+              基準座標：25.08210, 121.56530
+            </p>
+          </div>
+        </div>
+
+        <!-- 右側精準 GPS 按鈕與雙北 41 區連動選單 -->
+        <div class="lg:col-span-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
+          <button id="btnDetectGPS" type="button"
+            class="px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition active:scale-95 flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 shrink-0">
+            <i id="gpsBtnIcon" class="fa-solid fa-satellite-dish"></i>
+            <span id="gpsBtnLabel">精準 GPS 定位</span>
+          </button>
+
+          <div class="grid grid-cols-2 gap-2 flex-1 sm:max-w-md">
+            <select id="selectCity" aria-label="選擇縣市"
+              class="w-full px-3.5 py-3 rounded-2xl bg-slate-50 dark:bg-surface-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-500 transition cursor-pointer">
+              <option value="taipei">台北市 (12區)</option>
+              <option value="newtaipei">新北市 (29區)</option>
+              <option value="all">全雙北隨機區</option>
+            </select>
+
+            <select id="selectDistrict" aria-label="選擇行政區"
+              class="w-full px-3.5 py-3 rounded-2xl bg-slate-50 dark:bg-surface-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-500 transition cursor-pointer">
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 定位診斷與熱門商圈一鍵跳轉列（無 IP 猜測，避免跳錯區） -->
+      <div id="geoDiagnosticBar" class="pt-3 border-t border-slate-200/80 dark:border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 text-xs text-slate-500 dark:text-slate-400">
+        <div id="geoDiagnosticText" class="flex items-start sm:items-center gap-2 min-w-0">
+          <i id="geoDiagIcon" class="fa-solid fa-crosshairs text-emerald-500 shrink-0 mt-0.5 sm:mt-0"></i>
+          <span id="geoDiagMsg" class="leading-relaxed">精準模式：啟用高精準度多樣本 GPS 採樣；若在內嵌框被擋，請改用獨立網址或直接點選下方行政區。</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+          <button type="button" data-quick-loc="tp-neihu" class="quick-loc-btn px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-surface-800 hover:bg-brand-500/15 hover:text-amber-700 dark:hover:text-brand-400 border border-slate-200 dark:border-slate-700 font-semibold transition active:scale-95">內湖737/西湖</button>
+          <button type="button" data-quick-loc="tp-xinyi" class="quick-loc-btn px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-surface-800 hover:bg-brand-500/15 hover:text-amber-700 dark:hover:text-brand-400 border border-slate-200 dark:border-slate-700 font-semibold transition active:scale-95">信義商圈</button>
+          <button type="button" data-quick-loc="tp-zhongshan" class="quick-loc-btn px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-surface-800 hover:bg-brand-500/15 hover:text-amber-700 dark:hover:text-brand-400 border border-slate-200 dark:border-slate-700 font-semibold transition active:scale-95">中山商圈</button>
+          <button type="button" data-quick-loc="ntp-banqiao" class="quick-loc-btn px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-surface-800 hover:bg-brand-500/15 hover:text-amber-700 dark:hover:text-brand-400 border border-slate-200 dark:border-slate-700 font-semibold transition active:scale-95">板橋府中</button>
+          <button type="button" data-quick-loc="ntp-yonghe" class="quick-loc-btn px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-surface-800 hover:bg-brand-500/15 hover:text-amber-700 dark:hover:text-brand-400 border border-slate-200 dark:border-slate-700 font-semibold transition active:scale-95">永和樂華</button>
+          <button type="button" data-quick-loc="ntp-tamsui" class="quick-loc-btn px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-surface-800 hover:bg-brand-500/15 hover:text-amber-700 dark:hover:text-brand-400 border border-slate-200 dark:border-slate-700 font-semibold transition active:scale-95">淡水老街</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 主互動區：左側篩選設定 (5欄) ＋ 右側決策結果、口袋名單與歷史統計 (7欄) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+
+      <!-- 左側條件面板 -->
+      <section class="lg:col-span-5 bg-white dark:bg-surface-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-lg dark:shadow-xl space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3.5">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-brand-500"></i>
+            飲食條件與情境設定
+          </h3>
+          <button id="btnResetFilters" type="button" class="text-xs text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-brand-400 font-semibold transition active:scale-95">
+            全部重設
+          </button>
+        </div>
+
+        <!-- 情境快選 -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-500 dark:text-slate-400">今天想吃什麼情境（一鍵套用）</label>
+          <div id="moodPresetGroup" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-1.5">
+            <button type="button" data-mood="quick"
+              class="mood-btn px-3 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-200 hover:border-brand-500 transition active:scale-95 flex items-center gap-1.5">
+              <span>⚡</span><span class="truncate">快速解決一餐</span>
+            </button>
+            <button type="button" data-mood="sweet"
+              class="mood-btn px-3 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-200 hover:border-brand-500 transition active:scale-95 flex items-center gap-1.5">
+              <span>🍨</span><span class="truncate">嘴饞想吃甜/喝飲料</span>
+            </button>
+            <button type="button" data-mood="latenight"
+              class="mood-btn px-3 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-200 hover:border-brand-500 transition active:scale-95 flex items-center gap-1.5">
+              <span>🦉</span><span class="truncate">宵夜解饞/炸物滷味</span>
+            </button>
+            <button type="button" data-mood="treat"
+              class="mood-btn px-3 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-200 hover:border-brand-500 transition active:scale-95 flex items-center gap-1.5">
+              <span>🥂</span><span class="truncate">聚餐犒賞/鍋物燒肉</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 用餐時段 ＋ 自動依目前時間推估 -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-500 dark:text-slate-400">用餐時段</label>
+            <button id="btnAutoTimeSlot" type="button"
+              class="text-xs text-amber-600 dark:text-brand-400 hover:underline font-bold flex items-center gap-1 transition active:scale-95">
+              <i class="fa-regular fa-clock"></i>
+              <span>依現在時間自動推薦</span>
+            </button>
+          </div>
+          <div id="timeSlotGroup" class="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-3 gap-1.5">
+            <button type="button" data-timeslot="all" class="filter-timeslot active py-2 px-2 rounded-xl text-xs font-bold border border-brand-500 bg-brand-500/15 text-amber-700 dark:text-brand-400 transition active:scale-95">不限時段</button>
+            <button type="button" data-timeslot="breakfast" class="filter-timeslot py-2 px-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">🌅 早餐</button>
+            <button type="button" data-timeslot="lunch" class="filter-timeslot py-2 px-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">☀️ 午餐</button>
+            <button type="button" data-timeslot="afternoon" class="filter-timeslot py-2 px-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">🍨 下午茶</button>
+            <button type="button" data-timeslot="dinner" class="filter-timeslot py-2 px-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">🌙 晚餐</button>
+            <button type="button" data-timeslot="latenight" class="filter-timeslot py-2 px-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">🦉 宵夜</button>
+          </div>
+        </div>
+
+        <!-- 料理類型多選 -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-500 dark:text-slate-400">料理類型（可複選，未選代表不限）</label>
+            <button id="btnClearCategories" type="button" class="text-[11px] text-slate-400 hover:text-amber-600 dark:hover:text-brand-400 font-semibold">清除已選</button>
+          </div>
+          <div id="categoryGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2"></div>
+        </div>
+
+        <!-- 每人預算等級 -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-500 dark:text-slate-400">每人預算等級</label>
+          <div id="budgetGroup" class="grid grid-cols-5 gap-1.5">
+            <button type="button" data-budget="all" class="filter-budget active py-2 px-1 rounded-xl text-xs font-bold border border-brand-500 bg-brand-500/15 text-amber-700 dark:text-brand-400 transition active:scale-95">不限</button>
+            <button type="button" data-budget="1" class="filter-budget py-2 px-1 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">$ 150內</button>
+            <button type="button" data-budget="2" class="filter-budget py-2 px-1 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">$$ 350內</button>
+            <button type="button" data-budget="3" class="filter-budget py-2 px-1 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">$$$ 700內</button>
+            <button type="button" data-budget="4" class="filter-budget py-2 px-1 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">$$$$ 700+</button>
+          </div>
+        </div>
+
+        <!-- 搜尋半徑 -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-500 dark:text-slate-400">地圖搜尋半徑</label>
+          <div id="radiusGroup" class="grid grid-cols-4 gap-1.5">
+            <button type="button" data-radius="500m" class="filter-radius py-2 px-1 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">500m</button>
+            <button type="button" data-radius="1km" class="filter-radius active py-2 px-1 rounded-xl text-xs font-bold border border-brand-500 bg-brand-500/15 text-amber-700 dark:text-brand-400 transition active:scale-95">1km</button>
+            <button type="button" data-radius="3km" class="filter-radius py-2 px-1 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">3km</button>
+            <button type="button" data-radius="5km" class="filter-radius py-2 px-1 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 transition active:scale-95">5km</button>
+          </div>
+        </div>
+
+        <!-- 候選池狀態與排除不想吃抽屜 -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-surface-850 border border-slate-200 dark:border-slate-800 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+              <span id="poolCountLabel" class="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 truncate">目前有效抽籤池：0 項</span>
+            </div>
+            <button id="btnTogglePoolDrawer" type="button" aria-expanded="false" aria-controls="poolDrawer"
+              class="text-xs font-bold text-amber-600 dark:text-brand-400 hover:underline flex items-center gap-1 shrink-0 transition active:scale-95">
+              <i class="fa-solid fa-filter-circle-xmark"></i>
+              <span id="poolDrawerBtnText">管理 / 排除不想吃</span>
+            </button>
+          </div>
+
+          <!-- 排除項目一鍵復原橫幅 -->
+          <div id="excludedAlertBar" class="hidden items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs text-rose-600 dark:text-rose-300">
+            <span id="excludedCountText">已暫時排除 0 項不想吃的餐點</span>
+            <button id="btnQuickUndoExclude" type="button" class="font-bold underline hover:opacity-80 shrink-0">一鍵復原</button>
+          </div>
+
+          <!-- 候選清單剔除面板 -->
+          <div id="poolDrawer" class="hidden pt-2.5 border-t border-slate-200 dark:border-slate-700/80 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <input id="poolSearchInput" type="search" placeholder="搜尋餐點、甜點或飲品關鍵字..."
+                aria-label="搜尋候選餐點"
+                class="flex-1 min-w-[140px] px-3 py-1.5 rounded-xl bg-white dark:bg-surface-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-brand-500" />
+              <div class="flex items-center gap-2 text-xs font-semibold">
+                <button id="btnSelectAllPool" type="button" class="text-emerald-600 dark:text-emerald-400 hover:underline">全選納入</button>
+                <span class="text-slate-400">|</span>
+                <button id="btnRestoreExcluded" type="button" class="text-amber-600 dark:text-brand-400 hover:underline">還原預設</button>
+              </div>
+            </div>
+            <div id="poolChecklist" class="max-h-48 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5 pr-1"></div>
+          </div>
+        </div>
+
+        <!-- 桌面版主抽籤按鈕 -->
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-1">
+          <button id="btnSpinSingle" type="button"
+            class="sm:col-span-7 py-4 px-5 rounded-2xl bg-gradient-to-r from-brand-500 to-accent-500 hover:from-brand-600 hover:to-accent-600 text-slate-950 font-black text-sm sm:text-base shadow-lg shadow-brand-500/25 active:scale-[0.98] transition flex items-center justify-center gap-2.5">
+            <i id="spinIconSingle" class="fa-solid fa-dice text-lg"></i>
+            <span>隨機決定吃什麼</span>
+          </button>
+
+          <button id="btnSpinCombo" type="button"
+            class="sm:col-span-5 py-4 px-4 rounded-2xl bg-slate-900 dark:bg-surface-800 hover:bg-slate-800 dark:hover:bg-surface-700 text-brand-400 border border-brand-500/40 font-extrabold text-xs sm:text-sm shadow-md active:scale-[0.98] transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>幫我配一套</span>
+          </button>
+        </div>
+        <p class="text-[11px] text-center text-slate-400 dark:text-slate-500 hidden lg:block">
+          快捷鍵：<kbd class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-surface-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-mono">Space</kbd> 抽一餐 ・ <kbd class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-surface-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-mono">Esc</kbd> 收合抽屜
+        </p>
+      </section>
+
+      <!-- 右側結果與口袋名單 / 歷史統計 -->
+      <section class="lg:col-span-7 space-y-5 sm:space-y-6">
+
+        <!-- 推薦結果主卡片 -->
+        <div class="bg-white dark:bg-surface-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl dark:shadow-2xl relative overflow-hidden">
+          <div class="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-brand-400/15 blur-3xl pointer-events-none"></div>
+          <div class="absolute -bottom-24 -left-24 w-64 h-64 rounded-full bg-accent-500/10 blur-3xl pointer-events-none"></div>
+
+          <div class="relative z-10 space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span id="resultModeTag" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-brand-500/15 text-amber-700 dark:text-brand-400 border border-brand-500/30">
+                <i class="fa-solid fa-sparkles"></i> 雙北全餐飲決策就緒
+              </span>
+              <span id="resultLocationTag" class="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-location-dot text-accent-500"></i> 台北市 內湖區
+              </span>
+            </div>
+
+            <!-- 單抽結果視圖 -->
+            <div id="singleResultView" class="text-center py-2 space-y-4">
+              <div id="resultEmoji" class="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-3xl bg-slate-50 dark:bg-surface-850 border border-slate-200 dark:border-slate-700/80 flex items-center justify-center text-5xl sm:text-6xl shadow-inner transition-transform duration-150">
+                🍜
+              </div>
+
+              <div class="space-y-2 max-w-xl mx-auto">
+                <h3 id="resultTitle" class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                  按下按鈕，決定雙北下一餐！
+                </h3>
+                <p id="resultDesc" class="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+                  涵蓋主餐、甜點冰品、手搖咖啡與宵夜炸物滷味。抽中後可直接跳轉 Google 地圖搜尋附近店家，或一鍵複製揪團訊息。
+                </p>
+              </div>
+
+              <div id="resultTags" class="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <span class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-surface-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/70">📍 雙北 41 區座標庫</span>
+                <span class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-surface-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/70">🍨 主餐＋甜點/飲料套餐</span>
+              </div>
+            </div>
+
+            <!-- 「幫我配一套（主餐 + 甜點/飲料）」雙卡片視圖 -->
+            <div id="comboResultView" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="p-5 rounded-2xl bg-slate-50 dark:bg-surface-850 border border-slate-200 dark:border-slate-700/80 space-y-3 flex flex-col justify-between">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-500/20 text-amber-700 dark:text-brand-400">🍽️ 主餐推薦</span>
+                    <span id="comboMainBudget" class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">$$</span>
+                  </div>
+                  <div class="flex items-center gap-3 pt-1">
+                    <span id="comboMainEmoji" class="text-4xl shrink-0">🍜</span>
+                    <div class="min-w-0">
+                      <h4 id="comboMainTitle" class="text-lg font-extrabold text-slate-900 dark:text-white leading-snug truncate">紅燒牛肉麵</h4>
+                      <p id="comboMainCat" class="text-xs text-slate-500 dark:text-slate-400 truncate">台式經典</p>
+                    </div>
+                  </div>
+                  <p id="comboMainDesc" class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-1"></p>
+                </div>
+                <a id="btnComboMainMap" href="#" target="_blank" rel="noopener noreferrer"
+                  class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-map-location-dot"></i> 搜尋附近主餐店家
+                </a>
+              </div>
+
+              <div class="p-5 rounded-2xl bg-slate-50 dark:bg-surface-850 border border-slate-200 dark:border-slate-700/80 space-y-3 flex flex-col justify-between">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-accent-500/20 text-accent-600 dark:text-accent-400">🍨 甜點 / 飲料搭配</span>
+                    <span id="comboDrinkBudget" class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">$</span>
+                  </div>
+                  <div class="flex items-center gap-3 pt-1">
+                    <span id="comboDrinkEmoji" class="text-4xl shrink-0">🧋</span>
+                    <div class="min-w-0">
+                      <h4 id="comboDrinkTitle" class="text-lg font-extrabold text-slate-900 dark:text-white leading-snug truncate">黑糖珍珠鮮奶茶</h4>
+                      <p id="comboDrinkCat" class="text-xs text-slate-500 dark:text-slate-400 truncate">甜點冰品 / 手搖飲</p>
+                    </div>
+                  </div>
+                  <p id="comboDrinkDesc" class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-1"></p>
+                </div>
+                <a id="btnComboDrinkMap" href="#" target="_blank" rel="noopener noreferrer"
+                  class="w-full py-2.5 px-3 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-ice-cream"></i> 搜尋附近甜點/飲品
+                </a>
+              </div>
+            </div>
+
+            <!-- 結果操作按鈕列 -->
+            <div class="pt-5 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 sm:grid-cols-12 gap-2.5">
+              <a id="btnMapSearch" href="#" target="_blank" rel="noopener noreferrer"
+                class="col-span-2 sm:col-span-5 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm transition active:scale-95 flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20">
+                <i class="fa-solid fa-magnifying-glass-location"></i>
+                <span>Google 地圖搜尋</span>
+              </a>
+
+              <a id="btnMapNav" href="#" target="_blank" rel="noopener noreferrer"
+                class="col-span-1 sm:col-span-3 py-3 px-3 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs sm:text-sm transition active:scale-95 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-diamond-turn-right"></i>
+                <span>路線導航</span>
+              </a>
+
+              <button id="btnFavResult" type="button"
+                class="col-span-1 sm:col-span-2 py-3 px-3 rounded-2xl bg-slate-100 dark:bg-surface-800 hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-slate-700 hover:border-rose-500/40 font-bold text-xs sm:text-sm transition active:scale-95 flex items-center justify-center gap-1.5">
+                <i class="fa-regular fa-heart"></i>
+                <span>收藏</span>
+              </button>
+
+              <button id="btnShareInvite" type="button" title="複製 LINE / Discord 揪團訊息"
+                class="col-span-2 sm:col-span-2 py-3 px-3 rounded-2xl bg-slate-100 dark:bg-surface-800 hover:bg-brand-500/15 text-amber-700 dark:text-brand-400 border border-slate-200 dark:border-slate-700 hover:border-brand-500/40 font-bold text-xs sm:text-sm transition active:scale-95 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-share-nodes"></i>
+                <span>揪團</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 雙北口袋名單 ＆ 抽籤統計歷史紀錄 -->
+        <div class="bg-white dark:bg-surface-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-lg dark:shadow-xl space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3.5">
+            <div class="flex items-center gap-2">
+              <button id="tabFavorites" type="button"
+                class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-brand-500 text-slate-950 transition active:scale-95 flex items-center gap-1.5">
+                <i class="fa-solid fa-bookmark"></i>
+                <span>雙北口袋名單</span>
+                <span id="badgeFavCount" class="px-1.5 py-0.5 rounded-full text-[11px] bg-black/15 text-slate-950 font-extrabold">0</span>
+              </button>
+              <button id="tabHistory" type="button"
+                class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-surface-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition active:scale-95 flex items-center gap-1.5">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>歷史與統計</span>
+                <span id="badgeHistCount" class="px-1.5 py-0.5 rounded-full text-[11px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">0</span>
+              </button>
+            </div>
+
+            <div id="favToolsGroup" class="flex items-center gap-1.5">
+              <button id="btnExportJSON" type="button" title="匯出 JSON 備份"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-surface-800 hover:bg-slate-200 dark:hover:bg-surface-700 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition active:scale-95 flex items-center gap-1">
+                <i class="fa-solid fa-download"></i> 匯出
+              </button>
+              <label for="inputImportJSON" title="匯入 JSON 備份"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-surface-800 hover:bg-slate-200 dark:hover:bg-surface-700 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition active:scale-95 flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-upload"></i> 匯入
+              </label>
+              <input id="inputImportJSON" type="file" accept=".json,application/json" class="hidden" />
+            </div>
+          </div>
+
+          <!-- 口袋名單分頁 -->
+          <div id="panelFavorites" class="space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-surface-850 border border-slate-200 dark:border-slate-800">
+              <div class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <i class="fa-solid fa-scale-balanced text-brand-500"></i>
+                <span>口袋名單納入抽籤池權重：</span>
+              </div>
+              <div id="favWeightGroup" class="flex items-center gap-1.5">
+                <button type="button" data-weight="0" class="weight-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-surface-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 active:scale-95">0x 不納入</button>
+                <button type="button" data-weight="1" class="weight-btn active px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-500/20 text-amber-700 dark:text-brand-400 border border-brand-500 active:scale-95">1x 正常</button>
+                <button type="button" data-weight="2" class="weight-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-surface-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 active:scale-95">2x 加倍</button>
+                <button type="button" data-weight="3" class="weight-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-surface-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 active:scale-95">3x 極高</button>
+              </div>
+            </div>
+
+            <form id="formAddFavorite" class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <input id="favNameInput" type="text" maxlength="30" required placeholder="店名或甜點/料理（例：內湖豆花、西湖麵線）"
+                aria-label="愛店或餐點名稱"
+                class="sm:col-span-5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-surface-850 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-500" />
+              <select id="favDistrictInput" aria-label="愛店所在行政區"
+                class="sm:col-span-3 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-surface-850 border border-slate-300 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500">
+              </select>
+              <input id="favNoteInput" type="text" maxlength="40" placeholder="備註（例：芋圓必吃、微糖少冰）"
+                aria-label="愛店備註"
+                class="sm:col-span-2 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-surface-850 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-500" />
+              <button type="submit"
+                class="sm:col-span-2 py-2.5 px-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 text-xs sm:text-sm font-extrabold transition active:scale-95 flex items-center justify-center gap-1">
+                <i class="fa-solid fa-plus"></i> 新增
+              </button>
+            </form>
+
+            <div id="favoritesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-64 overflow-y-auto pr-1"></div>
+          </div>
+
+          <!-- 歷史與統計分頁 -->
+          <div id="panelHistory" class="hidden space-y-4">
+            <div class="grid grid-cols-3 gap-2.5">
+              <div class="p-3 rounded-2xl bg-slate-50 dark:bg-surface-850 border border-slate-200 dark:border-slate-800 text-center">
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">累計決策次數</p>
+                <p id="statTotalSpins" class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-0.5">0</p>
+              </div>
+              <div class="p-3 rounded-2xl bg-slate-50 dark:bg-surface-850 border border-slate-200 dark:border-slate-800 text-center">
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">最常抽中類型</p>
+                <p id="statTopCategory" class="text-sm sm:text-base font-extrabold text-amber-600 dark:text-brand-400 mt-1 truncate">尚無資料</p>
+              </div>
+              <div class="p-3 rounded-2xl bg-slate-50 dark:bg-surface-850 border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center">
+                <button id="btnClearHistory" type="button" class="text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold flex items-center gap-1 active:scale-95">
+                  <i class="fa-solid fa-trash-can"></i> 清空紀錄
+                </button>
+              </div>
+            </div>
+
+            <div id="historyContainer" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- 手機版（iOS Safari / Android Chrome）底部單手快捷操作列 -->
+  <div class="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white/95 dark:bg-surface-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 px-4 pt-2.5 pb-[calc(0.7rem+env(safe-area-inset-bottom))]">
+    <div class="max-w-lg mx-auto grid grid-cols-12 gap-2">
+      <button id="btnMobileGPS" type="button" aria-label="手機精準 GPS 定位"
+        class="col-span-2 py-3 rounded-2xl bg-slate-100 dark:bg-surface-800 text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-700 flex items-center justify-center active:scale-95 transition">
+        <i class="fa-solid fa-location-crosshairs text-base"></i>
+      </button>
+      <button id="btnMobileSpinSingle" type="button"
+        class="col-span-6 py-3 px-3 rounded-2xl bg-gradient-to-r from-brand-500 to-accent-500 text-slate-950 font-black text-sm shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2 active:scale-95 transition">
+        <i class="fa-solid fa-dice"></i>
+        <span>抽一餐</span>
+      </button>
+      <button id="btnMobileSpinCombo" type="button"
+        class="col-span-4 py-3 px-2 rounded-2xl bg-slate-900 dark:bg-surface-800 text-brand-400 border border-brand-500/40 font-extrabold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>配一套</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * 1. FoodCatalog：雙北 41 區完整座標與商圈資料 ＋ 完整主餐/甜點冰品/飲品/宵夜庫
+     * ============================================================================
+     */
+    const FoodCatalog = (() => {
+      const DISTRICTS = [
+        // 台北市 12 區
+        { id: 'tp-zhongzheng', city: 'taipei', cityName: '台北市', name: '中正區', lat: 25.0324, lng: 121.5183, tag: '北車・南陽街・公館水源商圈' },
+        { id: 'tp-datong', city: 'taipei', cityName: '台北市', name: '大同區', lat: 25.0631, lng: 121.5133, tag: '寧夏夜市・大稻埕・赤峰街文青美食' },
+        { id: 'tp-zhongshan', city: 'taipei', cityName: '台北市', name: '中山區', lat: 25.0697, lng: 121.5335, tag: '條通居酒屋・晴光市場・大直美食' },
+        { id: 'tp-songshan', city: 'taipei', cityName: '台北市', name: '松山區', lat: 25.0500, lng: 121.5576, tag: '饒河夜市・民生社區・南京復興商圈' },
+        { id: 'tp-daan', city: 'taipei', cityName: '台北市', name: '大安區', lat: 25.0267, lng: 121.5435, tag: '東區巷弄・永康街甜品・通化臨江夜市' },
+        { id: 'tp-wanhua', city: 'taipei', cityName: '台北市', name: '萬華區', lat: 25.0354, lng: 121.4997, tag: '西門町・華西街・南機場夜市' },
+        { id: 'tp-xinyi', city: 'taipei', cityName: '台北市', name: '信義區', lat: 25.0330, lng: 121.5654, tag: '信義百貨美食・永吉路30巷・吳興街' },
+        { id: 'tp-shilin', city: 'taipei', cityName: '台北市', name: '士林區', lat: 25.0928, lng: 121.5245, tag: '士林夜市・天母異國料理・社子小吃' },
+        { id: 'tp-beitou', city: 'taipei', cityName: '台北市', name: '北投區', lat: 25.1317, lng: 121.5013, tag: '北投市場・石牌商城・溫泉美食' },
+        { id: 'tp-neihu', city: 'taipei', cityName: '台北市', name: '內湖區', lat: 25.0821, lng: 121.5653, tag: '內科瑞光路・737巷夜市・西湖美食圈' },
+        { id: 'tp-nangang', city: 'taipei', cityName: '台北市', name: '南港區', lat: 25.0548, lng: 121.6068, tag: 'CITYLINK南港・中研院周邊・後山埤' },
+        { id: 'tp-wenshan', city: 'taipei', cityName: '台北市', name: '文山區', lat: 24.9987, lng: 121.5549, tag: '景美夜市・政大指南路・木柵小吃' },
+
+        // 新北市 29 區
+        { id: 'ntp-banqiao', city: 'newtaipei', cityName: '新北市', name: '板橋區', lat: 25.0143, lng: 121.4672, tag: '新板特區・湳雅夜市・江子翠早午餐' },
+        { id: 'ntp-sanchong', city: 'newtaipei', cityName: '新北市', name: '三重區', lat: 25.0615, lng: 121.4881, tag: '三和夜市・三重滷肉飯一級戰區' },
+        { id: 'ntp-zhonghe', city: 'newtaipei', cityName: '新北市', name: '中和區', lat: 24.9993, lng: 121.4988, tag: '興南夜市・緬甸街南洋料理・環球中和' },
+        { id: 'ntp-yonghe', city: 'newtaipei', cityName: '新北市', name: '永和區', lat: 25.0080, lng: 121.5153, tag: '樂華夜市・永和豆漿發源地・頂溪商圈' },
+        { id: 'ntp-xinzhuang', city: 'newtaipei', cityName: '新北市', name: '新莊區', lat: 25.0359, lng: 121.4504, tag: '新莊廟街夜市・宏匯廣場・輔大美食' },
+        { id: 'ntp-xindian', city: 'newtaipei', cityName: '新北市', name: '新店區', lat: 24.9675, lng: 121.5416, tag: '大坪林・裕隆城・碧潭光明街小吃' },
+        { id: 'ntp-tucheng', city: 'newtaipei', cityName: '新北市', name: '土城區', lat: 24.9722, lng: 121.4433, tag: '海山站美食・日月光廣場・延吉街夜市' },
+        { id: 'ntp-luzhou', city: 'newtaipei', cityName: '新北市', name: '蘆洲區', lat: 25.0849, lng: 121.4737, tag: '蘆洲切仔麵・湧蓮寺廟口夜市' },
+        { id: 'ntp-shulin', city: 'newtaipei', cityName: '新北市', name: '樹林區', lat: 24.9907, lng: 121.4205, tag: '樹林興仁花園夜市・樹林車站商圈' },
+        { id: 'ntp-xizhi', city: 'newtaipei', cityName: '新北市', name: '汐止區', lat: 25.0628, lng: 121.6425, tag: '汐止觀光夜市・遠雄廣場・中興路商圈' },
+        { id: 'ntp-yingge', city: 'newtaipei', cityName: '新北市', name: '鶯歌區', lat: 24.9554, lng: 121.3542, tag: '鶯歌老街・阿婆壽司・陶瓷街美食' },
+        { id: 'ntp-sanxia', city: 'newtaipei', cityName: '新北市', name: '三峽區', lat: 24.9343, lng: 121.3689, tag: '三峽老街金牛角・北大特區異國料理' },
+        { id: 'ntp-tamsui', city: 'newtaipei', cityName: '新北市', name: '淡水區', lat: 25.1695, lng: 121.4458, tag: '淡水老街阿給・英專路夜市・淡大美食' },
+        { id: 'ntp-ruifang', city: 'newtaipei', cityName: '新北市', name: '瑞芳區', lat: 25.1089, lng: 121.8062, tag: '瑞芳美食廣場・九份老街芋圓茶坊' },
+        { id: 'ntp-wugu', city: 'newtaipei', cityName: '新北市', name: '五股區', lat: 25.0827, lng: 121.4381, tag: '成泰路商圈・工商路在地小吃' },
+        { id: 'ntp-taishan', city: 'newtaipei', cityName: '新北市', name: '泰山區', lat: 25.0588, lng: 121.4308, tag: '明志路美食・輔大貴子路周邊' },
+        { id: 'ntp-linkou', city: 'newtaipei', cityName: '新北市', name: '林口區', lat: 25.0775, lng: 121.3916, tag: '林口三井Outlet・文化三路・長庚商圈' },
+        { id: 'ntp-shenkeng', city: 'newtaipei', cityName: '新北市', name: '深坑區', lat: 25.0023, lng: 121.6158, tag: '深坑老街麻辣臭豆腐・豆腐料理' },
+        { id: 'ntp-shiding', city: 'newtaipei', cityName: '新北市', name: '石碇區', lat: 24.9916, lng: 121.6588, tag: '石碇老街手工麵線・豆腐冰淇淋' },
+        { id: 'ntp-pinglin', city: 'newtaipei', cityName: '新北市', name: '坪林區', lat: 24.9373, lng: 121.7111, tag: '坪林老街茶油麵線・文山包種茶餐' },
+        { id: 'ntp-sanzhi', city: 'newtaipei', cityName: '新北市', name: '三芝區', lat: 25.2581, lng: 121.5008, tag: '淺水灣海景咖啡廳・三芝老街小籠包' },
+        { id: 'ntp-shimen', city: 'newtaipei', cityName: '新北市', name: '石門區', lat: 25.2904, lng: 121.5666, tag: '石門肉粽・富基漁港現撈海鮮' },
+        { id: 'ntp-bali', city: 'newtaipei', cityName: '新北市', name: '八里區', lat: 25.1467, lng: 121.3984, tag: '八里渡船頭雙胞胎・左岸景觀餐廳' },
+        { id: 'ntp-pingxi', city: 'newtaipei', cityName: '新北市', name: '平溪區', lat: 25.0257, lng: 121.7393, tag: '十分老街雞翅包飯・平溪古早味小吃' },
+        { id: 'ntp-shuangxi', city: 'newtaipei', cityName: '新北市', name: '雙溪區', lat: 25.0334, lng: 121.8656, tag: '雙溪老街海山餅店・在地古早味' },
+        { id: 'ntp-gongliao', city: 'newtaipei', cityName: '新北市', name: '貢寮區', lat: 25.0221, lng: 121.9082, tag: '福隆鐵路便當・澳底海鮮料理' },
+        { id: 'ntp-jinshan', city: 'newtaipei', cityName: '新北市', name: '金山區', lat: 25.2219, lng: 121.6373, tag: '金山老街鴨肉・地瓜甜點與海鮮' },
+        { id: 'ntp-wanli', city: 'newtaipei', cityName: '新北市', name: '萬里區', lat: 25.1775, lng: 121.6894, tag: '龜吼漁港萬里蟹・甜點與海景美食' },
+        { id: 'ntp-wulai', city: 'newtaipei', cityName: '新北市', name: '烏來區', lat: 24.8653, lng: 121.5513, tag: '烏來老街山豬肉香腸・竹筒飯野菜' }
+      ];
+
+      const CATEGORIES = [
+        { id: 'taiwanese', name: '台式小吃/飯麵', emoji: '🍚' },
+        { id: 'latenight_snack', name: '宵夜/炸物/滷味', emoji: '🍢' },
+        { id: 'brunch_light', name: '早午餐/輕食', emoji: '🥞' },
+        { id: 'japanese', name: '日式拉麵/丼飯', emoji: '🍜' },
+        { id: 'hotpot_exotic', name: '鍋物/異國料理', emoji: '🍲' },
+        { id: 'western_burger', name: '義式/美式漢堡', emoji: '🍔' },
+        { id: 'dessert_ice', name: '甜點/豆花/冰品', emoji: '🍨' },
+        { id: 'drink_cafe', name: '手搖飲/咖啡廳', emoji: '🧋' },
+        { id: 'bbq_izakaya', name: '燒肉/居酒屋/熱炒', emoji: '🍻' },
+        { id: 'teppan_hk', name: '鐵板燒/港式茶餐', emoji: '🥟' }
+      ];
+
+      const FOODS = [
+        // 台式小吃 / 飯麵
+        { id: 'f01', name: '雙北名店級滷肉飯＋燙青菜', emoji: '🍚', category: 'taiwanese', budget: 1, times: ['lunch', 'dinner', 'latenight'], role: 'main', keyword: '滷肉飯', tags: ['銅板美食', '快速出餐', '雙北靈魂'], desc: '油亮膠質滷肉燥淋在熱騰騰白飯上，搭配半熟荷包蛋與燙青菜最對味。' },
+        { id: 'f02', name: '紅燒半筋半肉牛肉麵', emoji: '🍜', category: 'taiwanese', budget: 2, times: ['lunch', 'dinner'], role: 'main', keyword: '牛肉麵', tags: ['台北代表', '濃郁湯頭', '飽足感'], desc: '濃醇紅燒湯頭搭配手工麵條與酸菜，暖胃又滿足。' },
+        { id: 'f03', name: '嘉義風味火雞肉飯＋味噌湯', emoji: '🍗', category: 'taiwanese', budget: 1, times: ['lunch', 'dinner'], role: 'main', keyword: '雞肉飯', tags: ['清爽不膩', '高CP值'], desc: '鮮嫩手撕火雞肉絲淋上油蔥雞油醬汁，清爽又有香氣的日常首選。' },
+        { id: 'f04', name: '古早味切仔麵＋黑白切拼盤', emoji: '🥢', category: 'taiwanese', budget: 1, times: ['breakfast', 'lunch', 'dinner'], role: 'main', keyword: '切仔麵 黑白切', tags: ['雙北特色', '台式早午餐'], desc: '清甜湯頭搭配油麵，再切一份嘴邊肉、肝連與油豆腐。' },
+        { id: 'f05', name: '現炸酥脆雞腿排／排骨便當', emoji: '🍱', category: 'taiwanese', budget: 1, times: ['lunch', 'dinner'], role: 'main', keyword: '雞腿飯 排骨飯', tags: ['快速解決一餐', '飽足感滿分'], desc: '現炸大雞腿或古早味滷排骨，配菜豐富、出餐快速。' },
+        { id: 'f06', name: '大腸蚵仔麵線＋脆皮臭豆腐', emoji: '🥣', category: 'taiwanese', budget: 1, times: ['afternoon', 'dinner', 'latenight'], role: 'main', keyword: '大腸麵線 臭豆腐', tags: ['經典組合', '台式點心'], desc: '滑順麵線加上滷透大腸與鮮蚵，配上一盤外酥內嫩泡菜臭豆腐。' },
+
+        // 宵夜 / 炸物 / 滷味
+        { id: 'f07', name: '台灣鹽酥雞＋九層塔炸物拼盤', emoji: '🍢', category: 'latenight_snack', budget: 1, times: ['dinner', 'latenight'], role: 'main', keyword: '鹽酥雞 炸物', tags: ['宵夜解饞', '蒜片九層塔'], desc: '現炸無骨鹽酥雞、甜不辣、四季豆與百頁豆腐，撒上胡椒粉超過癮。' },
+        { id: 'f08', name: '冷滷味／加熱式麻辣滷味拼盤', emoji: '🧆', category: 'latenight_snack', budget: 1, times: ['afternoon', 'dinner', 'latenight'], role: 'main', keyword: '滷味 加熱滷味', tags: ['宵夜解饞', '王子麵必加'], desc: '豆干、米血、鳥蛋、花椰菜與科學麵吸飽滷汁，鹹香涮嘴。' },
+        { id: 'f09', name: '傳統永和豆漿・燒餅油條小籠包', emoji: '🥟', category: 'latenight_snack', budget: 1, times: ['breakfast', 'latenight'], role: 'main', keyword: '永和豆漿 宵夜', tags: ['快速解決一餐', '宵夜解饞'], desc: '現桿酥脆蛋餅、剛出爐燒餅夾蛋配上一碗熱豆漿，早午餐或宵夜都適合。' },
+        { id: 'f10', name: '夜市鐵板牛排／碳烤串燒', emoji: '🥩', category: 'latenight_snack', budget: 2, times: ['dinner', 'latenight'], role: 'main', keyword: '夜市牛排 串燒', tags: ['滋滋作響', '濃湯紅茶'], desc: '熱騰騰鐵板麵淋上黑胡椒蘑菇醬，打顆半熟蛋，重溫逛夜市的快樂。' },
+
+        // 早午餐 / 輕食
+        { id: 'f11', name: '澳式早午餐・班尼迪克蛋拼盤', emoji: '🥞', category: 'brunch_light', budget: 2, times: ['breakfast', 'lunch', 'afternoon'], role: 'main', keyword: '早午餐 Brunch', tags: ['質感悠閒', '咖啡搭配'], desc: '麵包、水波蛋、煙燻鮭魚與嫩炒蛋，搭配一杯拿鐵開啟美好一天。' },
+        { id: 'f12', name: '舒肥嫩雞胸／炙燒鮭魚健康餐盒', emoji: '🥗', category: 'brunch_light', budget: 2, times: ['lunch', 'dinner'], role: 'main', keyword: '健康餐盒 水煮餐', tags: ['高蛋白低脂', '快速解決一餐'], desc: '低溫舒肥軟嫩雞胸肉搭配穀物飯與烤時蔬，吃飽也沒有罪惡感。' },
+        { id: 'f13', name: '夏威夷生魚飯 Poke Bowl', emoji: '🥑', category: 'brunch_light', budget: 2, times: ['lunch', 'dinner'], role: 'main', keyword: 'Poke 夏威夷拌飯', tags: ['清爽輕食', '酪梨毛豆'], desc: '基底自選醋飯或生菜，鋪滿鮭魚丁、酪梨、毛豆與清爽醬汁。' },
+        { id: 'f14', name: '手作三明治／鮪魚蛋吐司輕食', emoji: '🥪', category: 'brunch_light', budget: 1, times: ['breakfast', 'lunch', 'afternoon'], role: 'main', keyword: '三明治 輕食', tags: ['快速解決一餐', '清爽不膩'], desc: '現做厚蛋吐司或法棍三明治，搭配清爽生菜與現磨咖啡剛剛好。' },
+
+        // 日式拉麵 / 丼飯
+        { id: 'f15', name: '濃厚豚骨／雞白湯日式拉麵', emoji: '🍥', category: 'japanese', budget: 2, times: ['lunch', 'dinner', 'latenight'], role: 'main', keyword: '日式拉麵', tags: ['排隊名店', '舒肥叉燒'], desc: '熬煮數小時的濃郁湯底，搭配細直麵、溏心蛋與炙燒叉燒。' },
+        { id: 'f16', name: '厚切炸豬排日式咖哩飯', emoji: '🍛', category: 'japanese', budget: 2, times: ['lunch', 'dinner'], role: 'main', keyword: '日式咖哩 炸豬排', tags: ['金黃酥脆', '濃郁咖哩'], desc: '外皮酥脆多汁的厚切里肌豬排，淋上帶果香微辛的熟成日式咖哩醬。' },
+        { id: 'f17', name: '迴轉壽司／綜合海鮮生魚片丼', emoji: '🍣', category: 'japanese', budget: 3, times: ['lunch', 'dinner'], role: 'main', keyword: '壽司 日式丼飯', tags: ['新鮮海味', '聚餐犒賞'], desc: '鮭魚、鮪魚、干貝與甜蝦鋪滿醋飯，清爽鮮甜無負擔。' },
+        { id: 'f18', name: '日式炙燒牛丼／滑蛋親子丼', emoji: '🍚', category: 'japanese', budget: 1, times: ['lunch', 'dinner', 'latenight'], role: 'main', keyword: '牛丼 日式丼飯', tags: ['快速解決一餐', '平價美味'], desc: '醬汁滲入粒粒分明的米飯，搭配滑嫩半熟蛋液與滿滿肉片。' },
+
+        // 鍋物 / 異國料理
+        { id: 'f19', name: '石頭火鍋／個人精緻涮涮鍋', emoji: '🍲', category: 'hotpot_exotic', budget: 2, times: ['lunch', 'dinner', 'latenight'], role: 'main', keyword: '涮涮鍋 小火鍋', tags: ['聚餐犒賞', '菜盤肉盤'], desc: '台灣人一年四季都愛吃的個人鍋物，蔬菜肉片一次滿足。' },
+        { id: 'f20', name: '川味麻辣火鍋／鴨血豆腐煲', emoji: '🌶️', category: 'hotpot_exotic', budget: 3, times: ['dinner', 'latenight'], role: 'main', keyword: '麻辣火鍋 麻辣燙', tags: ['聚餐犒賞', '香麻過癮'], desc: '花椒與辛香料熬製的香辣湯底，吸滿湯汁的鴨血與老油條是靈魂。' },
+        { id: 'f21', name: '泰式打拋豬飯／椒麻雞簡餐', emoji: '🍋', category: 'hotpot_exotic', budget: 2, times: ['lunch', 'dinner'], role: 'main', keyword: '泰式料理 打拋豬', tags: ['酸辣開胃', '白飯殺手'], desc: '九層塔與辛香爆炒的打拋豬，配上太陽蛋與酸甜爽口的椒麻雞。' },
+        { id: 'f22', name: '越式生牛肉河粉＋炸春捲', emoji: '🍜', category: 'hotpot_exotic', budget: 1, times: ['lunch', 'dinner'], role: 'main', keyword: '越式河粉', tags: ['清爽鮮甜', '異國風味'], desc: '高湯沖熟粉嫩牛肉片，擠入新鮮檸檬汁與香草，清爽又開胃。' },
+        { id: 'f23', name: '韓式嫩豆腐鍋／石鍋拌飯', emoji: '🥘', category: 'hotpot_exotic', budget: 2, times: ['lunch', 'dinner'], role: 'main', keyword: '韓式料理 豆腐鍋', tags: ['小菜豐富', '微辣開胃'], desc: '滾燙微辣的海鮮嫩豆腐鍋，搭配鍋巴焦香的石鍋拌飯與小菜。' },
+
+        // 義式 / 美式漢堡
+        { id: 'f24', name: '清炒蒜香／松露奶油義大利麵', emoji: '🍝', category: 'western_burger', budget: 2, times: ['lunch', 'dinner'], role: 'main', keyword: '義大利麵 燉飯', tags: ['約會聚餐', '義式經典'], desc: '彈牙麵條完美吸附醬汁，無論是白酒蛤蜊或松露野菇燉飯都超療癒。' },
+        { id: 'f25', name: '手打純牛肉花生醬起司漢堡', emoji: '🍔', category: 'western_burger', budget: 2, times: ['lunch', 'dinner', 'latenight'], role: 'main', keyword: '美式漢堡', tags: ['大口咬下', '美式脆薯'], desc: '厚實多汁的現煎純牛肉排，搭配濃郁花生醬與融化切達起司。' },
+        { id: 'f26', name: '美式卡滋炸雞／連鎖速食套餐', emoji: '🍗', category: 'western_burger', budget: 1, times: ['lunch', 'afternoon', 'dinner', 'latenight'], role: 'main', keyword: '炸雞 速食', tags: ['快速解決一餐', '穩定不踩雷'], desc: '不知道吃什麼時最安全的選擇，現炸脆皮嫩雞配冰涼飲品瞬間紓壓。' },
+
+        // 甜點 / 豆花 / 冰品
+        { id: 'f27', name: '古早味手工豆花／花生粉圓豆花', emoji: '🍮', category: 'dessert_ice', budget: 1, times: ['breakfast', 'afternoon', 'dinner', 'latenight'], role: 'dessert', keyword: '豆花 粉圓豆花', tags: ['嘴饞想吃甜', '傳統甜品'], desc: '滑嫩黃豆花搭配綿密花生、Q彈粉圓與糖水，冰熱皆宜的雙北經典甜品。' },
+        { id: 'f28', name: '芋圓／嫩仙草冰甜品', emoji: '🍨', category: 'dessert_ice', budget: 1, times: ['afternoon', 'dinner', 'latenight'], role: 'dessert', keyword: '芋圓 嫩仙草 冰品', tags: ['嘴饞想吃甜', 'Q彈嚼勁'], desc: '手作芋圓地瓜圓搭配滑順嫩仙草，飯後或午後解饞超幸福。' },
+        { id: 'f29', name: '脆皮雞蛋糕／現烤格子鬆餅', emoji: '🧇', category: 'dessert_ice', budget: 1, times: ['breakfast', 'afternoon', 'dinner'], role: 'dessert', keyword: '雞蛋糕 鬆餅', tags: ['嘴饞想吃甜', '街頭下午茶'], desc: '外酥內軟的現烤雞蛋糕或香酥格子鬆餅，淋上蜂蜜或卡士達醬香氣四溢。' },
+        { id: 'f30', name: '千層蛋糕／巴斯克乳酪蛋糕', emoji: '🍰', category: 'dessert_ice', budget: 2, times: ['afternoon', 'dinner'], role: 'dessert', keyword: '千層蛋糕 巴斯克蛋糕 甜點店', tags: ['嘴饞想吃甜', '聚餐犒賞'], desc: '層層堆疊的千層或半熟焦香巴斯克乳酪蛋糕，甜而不膩超療癒。' },
+        { id: 'f31', name: '綿密雪花冰／芒果或抹茶刨冰', emoji: '🍧', category: 'dessert_ice', budget: 2, times: ['afternoon', 'dinner', 'latenight'], role: 'dessert', keyword: '雪花冰 刨冰', tags: ['嘴饞想吃甜', '消暑冰品'], desc: '入口即化的牛奶或抹茶雪花冰，鋪上水果與煉乳，瞬間降溫解饞。' },
+        { id: 'f32', name: '爆餡紅豆奶油車輪餅／鯛魚燒', emoji: '🥞', category: 'dessert_ice', budget: 1, times: ['afternoon', 'dinner'], role: 'dessert', keyword: '車輪餅 鯛魚燒', tags: ['嘴饞想吃甜', '銅板點心'], desc: '現烤酥脆外皮包裹飽滿紅豆或香濃卡士達奶油，邊走邊吃超療癒。' },
+
+        // 手搖飲 / 咖啡廳
+        { id: 'f33', name: '黑糖珍珠鮮奶茶／招牌紅茶拿鐵', emoji: '🧋', category: 'drink_cafe', budget: 1, times: ['afternoon', 'lunch', 'dinner', 'latenight'], role: 'drink', keyword: '珍珠奶茶 紅茶拿鐵 手搖飲', tags: ['嘴饞想吃甜', '台灣手搖'], desc: '香醇鮮乳融合茶香與Q彈珍珠，微糖少冰就是最經典的療癒滋味。' },
+        { id: 'f34', name: '新鮮水果茶／青茶四季春手搖飲', emoji: '🍹', category: 'drink_cafe', budget: 1, times: ['lunch', 'afternoon', 'dinner', 'latenight'], role: 'drink', keyword: '水果茶 四季春 手搖飲料', tags: ['清爽解膩', '餐後必備'], desc: '吃完重口味或炸物來一杯酸甜果茶或無糖青茶，瞬間清爽解膩。' },
+        { id: 'f35', name: '精品手沖咖啡／拿鐵咖啡廳', emoji: '☕', category: 'drink_cafe', budget: 2, times: ['breakfast', 'lunch', 'afternoon'], role: 'drink', keyword: '咖啡廳 拿鐵 手沖咖啡', tags: ['提神醒腦', '放空小憩'], desc: '來一杯順口拿鐵或單品手沖咖啡，適合提神工作或找個角落放空休息。' },
+
+        // 燒肉 / 居酒屋 / 熱炒
+        { id: 'f36', name: '炭火燒肉／和牛燒肉盛宴', emoji: '🥩', category: 'bbq_izakaya', budget: 4, times: ['dinner', 'latenight'], role: 'main', keyword: '燒肉 炭火燒肉', tags: ['聚餐犒賞', '頂級享受'], desc: '炭火直烤油花均勻的牛五花與牛舌，沾上檸檬汁與燒肉醬汁極致享受。' },
+        { id: 'f37', name: '台式熱炒／海鮮合菜餐廳', emoji: '🍻', category: 'bbq_izakaya', budget: 3, times: ['dinner', 'latenight'], role: 'main', keyword: '台式熱炒 海鮮餐廳', tags: ['聚餐犒賞', '宵夜解饞'], desc: '宮保雞丁、鳳梨蝦球、三杯中卷與炒時蔬，熱鬧氣氛最適合好友相聚。' },
+        { id: 'f38', name: '深夜居酒屋・串燒一夜干', emoji: '🍢', category: 'bbq_izakaya', budget: 3, times: ['dinner', 'latenight'], role: 'main', keyword: '居酒屋 串燒', tags: ['聚餐犒賞', '宵夜解饞'], desc: '炭烤明太子雞肉串、午仔魚一夜干配上一杯飲品，下班超放鬆。' },
+
+        // 鐵板燒 / 港式茶餐
+        { id: 'f39', name: '現炒平價／精緻鐵板燒套餐', emoji: '🍳', category: 'teppan_hk', budget: 2, times: ['lunch', 'dinner'], role: 'main', keyword: '鐵板燒', tags: ['現點現炒', '高麗菜豆芽菜'], desc: '看著師傅在鐵板上快手翻炒黑胡椒牛肉與香煎雞腿排，白飯再來一碗！' },
+        { id: 'f40', name: '港式茶餐廳・冰火菠蘿油與燒臘', emoji: '🥟', category: 'teppan_hk', budget: 2, times: ['breakfast', 'lunch', 'afternoon', 'dinner'], role: 'main', keyword: '港式飲茶 茶餐廳 燒臘', tags: ['脆皮燒肉', '絲襪奶茶'], desc: '三寶飯、蝦餃皇、干炒牛河配上一顆剛出爐的冰火菠蘿油與凍檸茶。' }
+      ];
+
+      return { DISTRICTS, CATEGORIES, FOODS };
+    })();
+
+    /**
+     * ============================================================================
+     * 2. PrecisionGeoEngine：高精準度多樣本 GPS 定位引擎（無 IP 亂猜、防漂移）
+     * ============================================================================
+     */
+    const PrecisionGeoEngine = (() => {
+      function calcDistanceKm(lat1, lng1, lat2, lng2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+          Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
+
+      function findNearestDistrict(lat, lng) {
+        let nearest = FoodCatalog.DISTRICTS[0];
+        let minDist = Infinity;
+        for (const d of FoodCatalog.DISTRICTS) {
+          const dist = calcDistanceKm(lat, lng, d.lat, d.lng);
+          if (dist < minDist) {
+            minDist = dist;
+            nearest = d;
+          }
+        }
+        return { district: nearest, distanceKm: minDist };
+      }
+
+      async function queryPermissionState() {
+        try {
+          if (navigator.permissions && typeof navigator.permissions.query === 'function') {
+            const status = await navigator.permissions.query({ name: 'geolocation' });
+            return status.state || 'unknown';
+          }
+        } catch (e) {}
+        return 'unknown';
+      }
+
+      function requestOneShot(options) {
+        return new Promise((resolve, reject) => {
+          if (!('geolocation' in navigator) || typeof navigator.geolocation.getCurrentPosition !== 'function') {
+            reject(new Error('UNSUPPORTED'));
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(resolve, reject, options);
+        });
+      }
+
+      /**
+       * 多樣本精準採樣：
+       * 1. 先以 enableHighAccuracy: true 取得初始座標；
+       * 2. 若誤差 > 80m 且支援 watchPosition，進行短暫多樣本追蹤（最長約 2.6 秒），保留 accuracy 最小（最精準）的讀數；
+       * 3. 若首次高精準逾時（非權限拒絕），自動以寬鬆參數重試一次。
+       */
+      async function acquirePrecisePosition(onProgress) {
+        let bestPos = null;
+
+        const consider = pos => {
+          if (!pos || !pos.coords) return;
+          const acc = Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : 9999;
+          if (!bestPos || acc < bestPos.accuracy) {
+            bestPos = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: Math.round(acc)
+            };
+          }
+        };
+
+        try {
+          if (typeof onProgress === 'function') onProgress('正在啟動高精準 GPS 採樣...');
+          const first = await requestOneShot({
+            enableHighAccuracy: true,
+            timeout: 7000,
+            maximumAge: 0
+          });
+          consider(first);
+        } catch (err) {
+          if (err && err.code === 1) {
+            throw err; // 明確權限拒絕
+          }
+          if (typeof onProgress === 'function') onProgress('高精準逾時，改以裝置網路/基地台定位重試...');
+          const fallback = await requestOneShot({
+            enableHighAccuracy: false,
+            timeout: 8000,
+            maximumAge: 15000
+          });
+          consider(fallback);
+        }
+
+        // 若誤差仍大於 80 公尺且支援 watchPosition，再收集短時間樣本以收斂精準度
+        if (
+          bestPos &&
+          bestPos.accuracy > 80 &&
+          navigator.geolocation &&
+          typeof navigator.geolocation.watchPosition === 'function'
+        ) {
+          if (typeof onProgress === 'function') onProgress(`目前誤差約 ±${bestPos.accuracy}m，持續收斂精準度中...`);
+          await new Promise(resolve => {
+            let watchId = null;
+            let settled = false;
+            const finish = () => {
+              if (settled) return;
+              settled = true;
+              if (watchId !== null) {
+                try { navigator.geolocation.clearWatch(watchId); } catch (e) {}
+              }
+              resolve();
+            };
+            try {
+              watchId = navigator.geolocation.watchPosition(
+                p => {
+                  consider(p);
+                  if (bestPos && bestPos.accuracy <= 35) {
+                    finish();
+                  }
+                },
+                () => finish(),
+                { enableHighAccuracy: true, timeout: 4000, maximumAge: 0 }
+              );
+            } catch (e) {
+              finish();
+            }
+            setTimeout(finish, 2500);
+          });
+        }
+
+        return bestPos;
+      }
+
+      function buildMapUrls(keyword, lat, lng, radiusStr = '1km') {
+        const zoomMap = { '500m': 17, '1km': 16, '3km': 14, '5km': 13 };
+        const zoom = zoomMap[radiusStr] || 16;
+        const encoded = encodeURIComponent(keyword || '美食 餐廳');
+        return {
+          searchUrl: `https://www.google.com/maps/search/${encoded}/@${lat},${lng},${zoom}z`,
+          navUrl: `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${encoded}&travelmode=walking`
+        };
+      }
+
+      return {
+        calcDistanceKm,
+        findNearestDistrict,
+        queryPermissionState,
+        acquirePrecisePosition,
+        buildMapUrls
+      };
+    })();
+
+    /**
+     * ============================================================================
+     * 3. SoundEngine：Web Audio API 合成音效控制（免外部音檔，支援靜音）
+     * ============================================================================
+     */
+    const SoundEngine = (() => {
+      let ctx = null;
+      let enabled = true;
+
+      function ensureContext() {
+        if (!ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) ctx = new AudioCtx();
+        }
+        if (ctx && ctx.state === 'suspended') {
+          ctx.resume().catch(() => {});
+        }
+      }
+
+      function playTick() {
+        if (!enabled) return;
+        try {
+          ensureContext();
+          if (!ctx) return;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(540, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(240, ctx.currentTime + 0.04);
+          gain.gain.setValueAtTime(0.075, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.045);
+        } catch (e) {}
+      }
+
+      function playWin() {
+        if (!enabled) return;
+        try {
+          ensureContext();
+          if (!ctx) return;
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const t0 = ctx.currentTime + idx * 0.07;
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, t0);
+            gain.gain.setValueAtTime(0.11, t0);
+            gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.26);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t0);
+            osc.stop(t0 + 0.28);
+          });
+        } catch (e) {}
+      }
+
+      function toggle() {
+        enabled = !enabled;
+        if (enabled) playTick();
+        return enabled;
+      }
+
+      return { playTick, playWin, toggle };
+    })();
+
+    /**
+     * ============================================================================
+     * 4. StorageManager：localStorage 容錯讀寫與 JSON 匯入安全驗證
+     * ============================================================================
+     */
+    const StorageManager = (() => {
+      const KEYS = {
+        FAVORITES: 'shuangbei_final_favorites_v1',
+        HISTORY: 'shuangbei_final_history_v1',
+        THEME: 'shuangbei_final_theme_v1'
+      };
+
+      const DEFAULT_FAVORITES = [
+        { id: 'fav-1', name: '內湖737巷豬血糕與小籠包', districtId: 'tp-neihu', note: '晚餐宵夜散步美食', keyword: '內湖737巷 美食', emoji: '🍢' },
+        { id: 'fav-2', name: '西湖市場周邊手作豆花', districtId: 'tp-neihu', note: '飯後甜點冰品首選', keyword: '西湖 豆花 甜點', emoji: '🍮' },
+        { id: 'fav-3', name: '永康街手工豆花與甜品', districtId: 'tp-daan', note: '經典甜品', keyword: '永康街 豆花 甜點', emoji: '🍨' },
+        { id: 'fav-4', name: '板橋府中早午餐拼盤', districtId: 'ntp-banqiao', note: '假日早午餐', keyword: '板橋 府中 早午餐', emoji: '🥞' }
+      ];
+
+      function sanitizeFavoriteItem(item, index) {
+        if (!item || typeof item !== 'object') return null;
+        const name = String(item.name || '').trim().slice(0, 40);
+        if (!name) return null;
+        const validDist = FoodCatalog.DISTRICTS.some(d => d.id === item.districtId)
+          ? item.districtId
+          : 'tp-neihu';
+        return {
+          id: typeof item.id === 'string' && item.id.trim() ? item.id.trim() : `fav-imp-${Date.now()}-${index}`,
+          name,
+          districtId: validDist,
+          note: String(item.note || '').trim().slice(0, 50),
+          keyword: String(item.keyword || name).trim().slice(0, 60),
+          emoji: typeof item.emoji === 'string' && item.emoji.trim() ? item.emoji.trim().slice(0, 6) : '⭐'
+        };
+      }
+
+      function validateAndNormalizeFavorites(rawList) {
+        if (!Array.isArray(rawList)) {
+          throw new Error('JSON 根層級必須為陣列格式');
+        }
+        const cleaned = rawList
+          .map((item, idx) => sanitizeFavoriteItem(item, idx))
+          .filter(Boolean);
+        if (cleaned.length === 0) {
+          throw new Error('找不到有效的口袋名單項目（需包含 name 欄位）');
+        }
+        return cleaned;
+      }
+
+      function loadFavorites() {
+        try {
+          const raw = localStorage.getItem(KEYS.FAVORITES);
+          if (!raw) return [...DEFAULT_FAVORITES];
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return [...DEFAULT_FAVORITES];
+          const normalized = parsed.map((item, idx) => sanitizeFavoriteItem(item, idx)).filter(Boolean);
+          return normalized.length > 0 ? normalized : [...DEFAULT_FAVORITES];
+        } catch (e) {
+          return [...DEFAULT_FAVORITES];
+        }
+      }
+
+      function saveFavorites(list) {
+        try {
+          localStorage.setItem(KEYS.FAVORITES, JSON.stringify(list));
+        } catch (e) {}
+      }
+
+      function loadHistory() {
+        try {
+          const raw = localStorage.getItem(KEYS.HISTORY);
+          if (!raw) return [];
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return [];
+          return parsed
+            .filter(h => h && typeof h === 'object' && typeof h.title === 'string')
+            .slice(0, 30);
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveHistory(list) {
+        try {
+          localStorage.setItem(KEYS.HISTORY, JSON.stringify(list));
+        } catch (e) {}
+      }
+
+      function loadTheme() {
+        try {
+          const saved = localStorage.getItem(KEYS.THEME);
+          return saved === 'light' ? 'light' : 'dark';
+        } catch (e) {
+          return 'dark';
+        }
+      }
+
+      function saveTheme(mode) {
+        try {
+          localStorage.setItem(KEYS.THEME, mode);
+        } catch (e) {}
+      }
+
+      return {
+        loadFavorites,
+        saveFavorites,
+        loadHistory,
+        saveHistory,
+        loadTheme,
+        saveTheme,
+        validateAndNormalizeFavorites
+      };
+    })();
+
+    /**
+     * ============================================================================
+     * 5. AppState & RecommendationEngine：狀態管理與候選池演算
+     * ============================================================================
+     */
+    const AppState = {
+      theme: StorageManager.loadTheme(),
+      geo: {
+        mode: 'district', // 'district' | 'gps_precise' | 'gps_coarse'
+        cityFilter: 'taipei',
+        districtId: 'tp-neihu',
+        lat: 25.0821,
+        lng: 121.5653,
+        accuracy: null,
+        label: '台北市 內湖區',
+        highlight: '內科瑞光路・737巷夜市・西湖美食圈',
+        nearestDistrictLabel: '',
+        diagType: 'ok', // 'ok' | 'warn'
+        diagMessage: '精準模式：啟用高精準度多樣本 GPS 採樣；若在內嵌框被擋，請改用獨立網址或直接點選行政區。'
+      },
+      filters: {
+        timeSlot: 'all',
+        categories: new Set(),
+        budget: 'all',
+        radius: '1km',
+        excludedIds: new Set(),
+        favoriteWeight: 1,
+        poolSearchQuery: ''
+      },
+      result: {
+        mode: 'single',
+        singleItem: null,
+        comboMain: null,
+        comboSide: null
+      },
+      isSpinning: false,
+      favorites: StorageManager.loadFavorites(),
+      history: StorageManager.loadHistory()
+    };
+
+    const RecommendationEngine = (() => {
+      function getFilteredBaseFoods() {
+        const { timeSlot, categories, budget } = AppState.filters;
+        return FoodCatalog.FOODS.filter(item => {
+          const matchTime = timeSlot === 'all' || item.times.includes(timeSlot);
+          const matchCat = categories.size === 0 || categories.has(item.category);
+          const matchBudget = budget === 'all' || String(item.budget) === String(budget);
+          return matchTime && matchCat && matchBudget;
+        });
+      }
+
+      function buildActivePool() {
+        const baseFoods = getFilteredBaseFoods().filter(
+          item => !AppState.filters.excludedIds.has(item.id)
+        );
+        const pool = [...baseFoods];
+        const weight = AppState.filters.favoriteWeight;
+
+        if (weight > 0 && AppState.favorites.length > 0) {
+          AppState.favorites.forEach(fav => {
+            if (AppState.filters.excludedIds.has(fav.id)) return;
+            const distObj = FoodCatalog.DISTRICTS.find(d => d.id === fav.districtId);
+            const distLabel = distObj ? `${distObj.cityName}${distObj.name}` : '雙北口袋愛店';
+
+            const favEntry = {
+              id: fav.id,
+              name: fav.name,
+              emoji: fav.emoji || '⭐',
+              category: 'favorite',
+              budget: 2,
+              role: 'main',
+              keyword: fav.keyword || fav.name,
+              tags: ['口袋名單', distLabel, fav.note || '精選愛店'],
+              desc: fav.note
+                ? `口袋名單備註：「${fav.note}」— 位於${distLabel}，點擊下方按鈕立即前往！`
+                : `來自您的雙北口袋名單精選愛店（${distLabel}），立刻開啟地圖查看營業狀態！`,
+              isFavorite: true
+            };
+
+            for (let i = 0; i < weight; i++) {
+              pool.push(favEntry);
+            }
+          });
+        }
+
+        return pool;
+      }
+
+      function getSweetDrinkSidePool() {
+        const sides = FoodCatalog.FOODS.filter(
+          item => (item.role === 'dessert' || item.role === 'drink') &&
+                   !AppState.filters.excludedIds.has(item.id)
+        );
+        return sides.length > 0
+          ? sides
+          : FoodCatalog.FOODS.filter(item => item.role === 'dessert' || item.role === 'drink');
+      }
+
+      function pickWeightedItem(pool, avoidId = null) {
+        if (!Array.isArray(pool) || pool.length === 0) return null;
+        if (pool.length === 1) return pool[0];
+        const candidates = avoidId ? pool.filter(x => x.id !== avoidId) : pool;
+        const targetList = candidates.length > 0 ? candidates : pool;
+        return targetList[Math.floor(Math.random() * targetList.length)];
+      }
+
+      return { getFilteredBaseFoods, buildActivePool, getSweetDrinkSidePool, pickWeightedItem };
+    })();
+
+    /**
+     * ============================================================================
+     * 6. UI：DOM 渲染、防重複 Toast 洗版與跨裝置狀態同步
+     * ============================================================================
+     */
+    const UI = (() => {
+      const $ = id => document.getElementById(id);
+      let lastToastKey = '';
+      let lastToastAt = 0;
+
+      function escapeHTML(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function showToast(msg, type = 'info') {
+        const now = Date.now();
+        const key = `${type}:${msg}`;
+        if (key === lastToastKey && now - lastToastAt < 2400) return;
+        lastToastKey = key;
+        lastToastAt = now;
+
+        const container = $('toastContainer');
+        if (container.children.length >= 3) {
+          container.firstElementChild.remove();
+        }
+
+        const el = document.createElement('div');
+        const palette = {
+          success: 'bg-emerald-600 text-white border-emerald-400/40',
+          error: 'bg-rose-600 text-white border-rose-400/40',
+          info: 'bg-slate-900 dark:bg-surface-800 text-white border-slate-700'
+        };
+        const icons = {
+          success: 'fa-circle-check',
+          error: 'fa-triangle-exclamation',
+          info: 'fa-circle-info'
+        };
+        el.className = `${palette[type] || palette.info} border text-xs sm:text-sm font-semibold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 transition-all duration-300 opacity-0 translate-x-4`;
+        el.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${escapeHTML(msg)}</span>`;
+        container.appendChild(el);
+
+        requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-x-4'));
+        setTimeout(() => {
+          el.classList.add('opacity-0', 'translate-x-4');
+          setTimeout(() => el.remove(), 300);
+        }, 2800);
+      }
+
+      function applyTheme(mode) {
+        AppState.theme = mode;
+        const html = document.documentElement;
+        if (mode === 'dark') html.classList.add('dark');
+        else html.classList.remove('dark');
+
+        const icon = $('themeIcon');
+        const label = $('themeLabel');
+        if (icon) {
+          icon.className = mode === 'dark' ? 'fa-solid fa-moon text-brand-400' : 'fa-solid fa-sun text-amber-500';
+        }
+        if (label) label.textContent = mode === 'dark' ? '深色' : '淺色';
+        StorageManager.saveTheme(mode);
+      }
+
+      function populateDistrictSelects() {
+        const selectCity = $('selectCity');
+        const selectDistrict = $('selectDistrict');
+        const favDistrictInput = $('favDistrictInput');
+
+        const cityVal = selectCity.value;
+        const filtered = cityVal === 'all'
+          ? FoodCatalog.DISTRICTS
+          : FoodCatalog.DISTRICTS.filter(d => d.city === cityVal);
+
+        selectDistrict.innerHTML = filtered.map(d =>
+          `<option value="${d.id}">${d.cityName}・${d.name}</option>`
+        ).join('');
+
+        if (filtered.some(d => d.id === AppState.geo.districtId)) {
+          selectDistrict.value = AppState.geo.districtId;
+        } else if (filtered.length > 0) {
+          selectDistrict.value = filtered[0].id;
+        }
+
+        if (favDistrictInput.options.length === 0) {
+          const tpOpts = FoodCatalog.DISTRICTS.filter(d => d.city === 'taipei')
+            .map(d => `<option value="${d.id}">台北市 ${d.name}</option>`).join('');
+          const ntpOpts = FoodCatalog.DISTRICTS.filter(d => d.city === 'newtaipei')
+            .map(d => `<option value="${d.id}">新北市 ${d.name}</option>`).join('');
+          favDistrictInput.innerHTML = `
+            <optgroup label="台北市 (12區)">${tpOpts}</optgroup>
+            <optgroup label="新北市 (29區)">${ntpOpts}</optgroup>
+          `;
+          favDistrictInput.value = AppState.geo.districtId;
+        }
+      }
+
+      function renderGeoHeader() {
+        const g = AppState.geo;
+        $('geoTitle').textContent = g.label;
+        $('resultLocationTag').innerHTML = `<i class="fa-solid fa-location-dot text-accent-500"></i> ${escapeHTML(g.label)}`;
+
+        const accBadge = $('geoAccuracyBadge');
+        if (g.mode === 'gps_precise') {
+          $('geoModeBadge').textContent = '高精準度 GPS 定位';
+          $('geoModeBadge').className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30';
+          accBadge.textContent = `±${g.accuracy}m`;
+          accBadge.classList.remove('hidden');
+          $('geoHighlightBadge').textContent = g.nearestDistrictLabel || '精準衛星座標';
+          $('geoSubInfo').textContent = `精準座標：${g.lat.toFixed(6)}, ${g.lng.toFixed(6)}（誤差 ±${g.accuracy}m）`;
+        } else if (g.mode === 'gps_coarse') {
+          $('geoModeBadge').textContent = '裝置粗略定位（建議再採樣或選區）';
+          $('geoModeBadge').className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30';
+          accBadge.textContent = `±${g.accuracy}m`;
+          accBadge.classList.remove('hidden');
+          $('geoHighlightBadge').textContent = g.nearestDistrictLabel || '裝置定位座標';
+          $('geoSubInfo').textContent = `裝置座標：${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}（誤差 ±${g.accuracy}m）`;
+        } else {
+          $('geoModeBadge').textContent = '手動行政區基準座標';
+          $('geoModeBadge').className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-500/15 text-amber-700 dark:text-brand-400 border border-brand-500/30';
+          accBadge.classList.add('hidden');
+          $('geoHighlightBadge').textContent = g.highlight;
+          $('geoSubInfo').textContent = `基準座標：${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}`;
+        }
+
+        $('geoDiagIcon').className = g.diagType === 'warn'
+          ? 'fa-solid fa-triangle-exclamation text-amber-500 shrink-0 mt-0.5 sm:mt-0'
+          : 'fa-solid fa-crosshairs text-emerald-500 shrink-0 mt-0.5 sm:mt-0';
+        $('geoDiagMsg').textContent = g.diagMessage;
+
+        syncResultMapLinks();
+      }
+
+      function renderCategoryButtons() {
+        const grid = $('categoryGrid');
+        grid.innerHTML = FoodCatalog.CATEGORIES.map(cat => {
+          const active = AppState.filters.categories.has(cat.id);
+          const cls = active
+            ? 'border-brand-500 bg-brand-500/15 text-amber-800 dark:text-brand-400 font-bold'
+            : 'border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800 font-medium';
+          return `
+            <button type="button" data-category="${escapeHTML(cat.id)}"
+              class="filter-category px-3 py-2 rounded-xl text-xs border ${cls} transition active:scale-95 flex items-center gap-2 text-left">
+              <span class="text-sm shrink-0">${cat.emoji}</span>
+              <span class="truncate">${escapeHTML(cat.name)}</span>
+            </button>
+          `;
+        }).join('');
+      }
+
+      function renderPoolStatusAndDrawer() {
+        const filteredFoods = RecommendationEngine.getFilteredBaseFoods();
+        const activePool = RecommendationEngine.buildActivePool();
+        const excludedCount = AppState.filters.excludedIds.size;
+
+        $('poolCountLabel').textContent = `目前有效抽籤池：${activePool.length} 項（條件符合 ${filteredFoods.length} 類）`;
+
+        const alertBar = $('excludedAlertBar');
+        if (excludedCount > 0) {
+          alertBar.classList.remove('hidden');
+          alertBar.classList.add('flex');
+          $('excludedCountText').textContent = `已暫時排除 ${excludedCount} 項不想吃的餐點`;
+        } else {
+          alertBar.classList.add('hidden');
+          alertBar.classList.remove('flex');
+        }
+
+        const q = AppState.filters.poolSearchQuery.trim().toLowerCase();
+        const allItems = [
+          ...AppState.favorites.map(f => ({ id: f.id, name: f.name, emoji: f.emoji || '⭐', badge: '口袋' })),
+          ...FoodCatalog.FOODS.map(f => ({ id: f.id, name: f.name, emoji: f.emoji, badge: '' }))
+        ];
+
+        const visibleItems = q
+          ? allItems.filter(it => it.name.toLowerCase().includes(q))
+          : allItems;
+
+        $('poolChecklist').innerHTML = visibleItems.map(item => {
+          const isExcluded = AppState.filters.excludedIds.has(item.id);
+          return `
+            <label class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border text-xs cursor-pointer transition ${
+              isExcluded
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300 line-through opacity-75'
+                : 'bg-white dark:bg-surface-900 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:border-brand-500/60'
+            }">
+              <span class="flex items-center gap-1.5 min-w-0">
+                <input type="checkbox" data-pool-id="${escapeHTML(item.id)}" ${!isExcluded ? 'checked' : ''}
+                  class="pool-item-checkbox rounded accent-amber-500 cursor-pointer shrink-0" />
+                <span class="shrink-0">${item.emoji}</span>
+                <span class="truncate">${escapeHTML(item.name)}</span>
+              </span>
+              ${item.badge ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-brand-500/20 text-amber-700 dark:text-brand-300 font-bold shrink-0">${item.badge}</span>` : ''}
+            </label>
+          `;
+        }).join('');
+      }
+
+      function syncResultMapLinks() {
+        const { lat, lng, label } = AppState.geo;
+        const radius = AppState.filters.radius;
+
+        if (AppState.result.mode === 'combo' && AppState.result.comboMain && AppState.result.comboSide) {
+          const main = AppState.result.comboMain;
+          const side = AppState.result.comboSide;
+          const mainUrls = PrecisionGeoEngine.buildMapUrls(`${label} ${main.keyword}`, lat, lng, radius);
+          const sideUrls = PrecisionGeoEngine.buildMapUrls(`${label} ${side.keyword}`, lat, lng, radius);
+          const comboUrls = PrecisionGeoEngine.buildMapUrls(`${label} ${main.keyword} ${side.keyword}`, lat, lng, radius);
+
+          $('btnComboMainMap').href = mainUrls.searchUrl;
+          $('btnComboDrinkMap').href = sideUrls.searchUrl;
+          $('btnMapSearch').href = comboUrls.searchUrl;
+          $('btnMapNav').href = mainUrls.navUrl;
+        } else {
+          const item = AppState.result.singleItem;
+          const kw = item ? `${label} ${item.keyword}` : `${label} 美食 餐廳`;
+          const urls = PrecisionGeoEngine.buildMapUrls(kw, lat, lng, radius);
+          $('btnMapSearch').href = urls.searchUrl;
+          $('btnMapNav').href = urls.navUrl;
+        }
+      }
+
+      function renderSingleResult(item, isSpinningTick = false) {
+        AppState.result.mode = 'single';
+        AppState.result.singleItem = item;
+        AppState.result.comboMain = null;
+        AppState.result.comboSide = null;
+
+        $('singleResultView').classList.remove('hidden');
+        $('comboResultView').classList.add('hidden');
+        $('resultEmoji').textContent = item.emoji;
+        $('resultTitle').textContent = item.name;
+        $('resultDesc').textContent = item.desc;
+
+        if (!isSpinningTick) {
+          $('resultModeTag').innerHTML = item.isFavorite
+            ? '<i class="fa-solid fa-heart"></i> 抽中雙北口袋愛店！'
+            : '<i class="fa-solid fa-sparkles"></i> 雙北美食決策出爐';
+          const budgetText = { 1: '$ 150內', 2: '$$ 350內', 3: '$$$ 700內', 4: '$$$$ 700+' }[item.budget] || '$$';
+          const tags = [
+            `📍 ${AppState.geo.label}`,
+            `💰 ${budgetText}`,
+            `📏 半徑 ${AppState.filters.radius}`,
+            ...(item.tags || []).slice(0, 2)
+          ];
+          $('resultTags').innerHTML = tags.map(t =>
+            `<span class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-surface-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/70">${escapeHTML(t)}</span>`
+          ).join('');
+          syncResultMapLinks();
+        }
+      }
+
+      function renderComboResult(mainItem, sideItem) {
+        AppState.result.mode = 'combo';
+        AppState.result.singleItem = null;
+        AppState.result.comboMain = mainItem;
+        AppState.result.comboSide = sideItem;
+
+        $('singleResultView').classList.add('hidden');
+        $('comboResultView').classList.remove('hidden');
+        $('resultModeTag').innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> 雙北「主餐＋甜點/飲料」套餐組合';
+
+        const bMap = { 1: '$', 2: '$$', 3: '$$$', 4: '$$$$' };
+        $('comboMainEmoji').textContent = mainItem.emoji;
+        $('comboMainTitle').textContent = mainItem.name;
+        $('comboMainBudget').textContent = bMap[mainItem.budget] || '$$';
+        $('comboMainCat').textContent = `${AppState.geo.label}・${mainItem.keyword}`;
+        $('comboMainDesc').textContent = mainItem.desc;
+
+        $('comboDrinkEmoji').textContent = sideItem.emoji;
+        $('comboDrinkTitle').textContent = sideItem.name;
+        $('comboDrinkBudget').textContent = bMap[sideItem.budget] || '$';
+        $('comboDrinkCat').textContent = sideItem.role === 'dessert' ? '甜點 / 冰品搭配' : '手搖飲 / 咖啡搭配';
+        $('comboDrinkDesc').textContent = sideItem.desc;
+
+        $('resultTags').innerHTML = `
+          <span class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-surface-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/70">📍 ${escapeHTML(AppState.geo.label)}</span>
+          <span class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-surface-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/70">🍽️ ${escapeHTML(mainItem.name)}</span>
+          <span class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-surface-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/70">🍨 ${escapeHTML(sideItem.name)}</span>
+        `;
+        syncResultMapLinks();
+      }
+
+      function renderFavorites() {
+        const list = AppState.favorites;
+        $('badgeFavCount').textContent = String(list.length);
+
+        if (list.length === 0) {
+          $('favoritesContainer').innerHTML = `
+            <div class="col-span-full text-center py-6 text-xs text-slate-400 dark:text-slate-500">
+              目前還沒有口袋愛店，在上方新增或抽中喜歡的餐點後按「收藏」吧！
+            </div>
+          `;
+          return;
+        }
+
+        $('favoritesContainer').innerHTML = list.map(fav => {
+          const dist = FoodCatalog.DISTRICTS.find(d => d.id === fav.districtId);
+          const distName = dist ? `${dist.cityName}${dist.name}` : '雙北';
+          const mapUrl = PrecisionGeoEngine.buildMapUrls(`${distName} ${fav.keyword || fav.name}`, AppState.geo.lat, AppState.geo.lng, AppState.filters.radius).searchUrl;
+          return `
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-surface-850 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-2.5">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="text-2xl shrink-0">${escapeHTML(fav.emoji || '⭐')}</span>
+                <div class="min-w-0">
+                  <p class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">${escapeHTML(fav.name)}</p>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">${escapeHTML(distName)}${fav.note ? ` ・ ${escapeHTML(fav.note)}` : ''}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <a href="${mapUrl}" target="_blank" rel="noopener noreferrer" title="在 Google 地圖搜尋"
+                  class="p-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs transition active:scale-95">
+                  <i class="fa-solid fa-map-pin"></i>
+                </a>
+                <button type="button" data-del-fav="${escapeHTML(fav.id)}" title="移除口袋名單"
+                  class="btn-del-fav p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs transition active:scale-95">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderHistoryAndStats() {
+        const hist = AppState.history;
+        $('badgeHistCount').textContent = String(hist.length);
+        $('statTotalSpins').textContent = String(hist.length);
+
+        if (hist.length === 0) {
+          $('statTopCategory').textContent = '尚無資料';
+          $('historyContainer').innerHTML = `
+            <div class="text-center py-6 text-xs text-slate-400 dark:text-slate-500">
+              尚未有抽籤紀錄，按下「隨機決定吃什麼」或「幫我配一套」開始吧！
+            </div>
+          `;
+          return;
+        }
+
+        const counts = {};
+        hist.forEach(h => {
+          const key = h.categoryName || '美食決策';
+          counts[key] = (counts[key] || 0) + 1;
+        });
+        const topEntry = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+        $('statTopCategory').textContent = topEntry ? `${topEntry[0]} (${topEntry[1]})` : '尚無資料';
+
+        $('historyContainer').innerHTML = hist.map(h => `
+          <div class="px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-surface-850 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="text-lg shrink-0">${escapeHTML(h.emoji || '🍽️')}</span>
+              <div class="min-w-0">
+                <p class="font-bold text-slate-900 dark:text-white truncate">${escapeHTML(h.title)}</p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">${escapeHTML(h.location || '')} ・ ${escapeHTML(h.categoryName || '')}</p>
+              </div>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400 shrink-0">${escapeHTML(h.timeLabel || '')}</span>
+          </div>
+        `).join('');
+      }
+
+      return {
+        $,
+        escapeHTML,
+        showToast,
+        applyTheme,
+        populateDistrictSelects,
+        renderGeoHeader,
+        renderCategoryButtons,
+        renderPoolStatusAndDrawer,
+        syncResultMapLinks,
+        renderSingleResult,
+        renderComboResult,
+        renderFavorites,
+        renderHistoryAndStats
+      };
+    })();
+
+    /**
+     * ============================================================================
+     * 7. Controller：事件綁定、高精準定位流程、抽籤動畫與跨裝置互動
+     * ============================================================================
+     */
+    const Controller = (() => {
+      const $ = UI.$;
+      let isLocating = false;
+
+      function setDistrictById(districtId, toastMessage = '') {
+        const dist = FoodCatalog.DISTRICTS.find(d => d.id === districtId) || FoodCatalog.DISTRICTS[9]; // 預設內湖區
+        AppState.geo.mode = 'district';
+        AppState.geo.districtId = dist.id;
+        AppState.geo.lat = dist.lat;
+        AppState.geo.lng = dist.lng;
+        AppState.geo.accuracy = null;
+        AppState.geo.nearestDistrictLabel = '';
+        AppState.geo.label = `${dist.cityName} ${dist.name}`;
+        AppState.geo.highlight = dist.tag;
+        AppState.geo.diagType = 'ok';
+        AppState.geo.diagMessage = `已鎖定 ${dist.cityName}${dist.name} 基準座標；按「精準 GPS 定位」可取得裝置實際座標與誤差範圍。`;
+
+        if ($('selectCity').value !== 'all' && $('selectCity').value !== dist.city) {
+          $('selectCity').value = dist.city;
+        }
+        UI.populateDistrictSelects();
+        $('selectDistrict').value = dist.id;
+        UI.renderGeoHeader();
+        if (toastMessage) UI.showToast(toastMessage, 'success');
+      }
+
+      async function handlePreciseGPS() {
+        if (isLocating) return;
+        isLocating = true;
+
+        const btnIcon = $('gpsBtnIcon');
+        const btnLabel = $('gpsBtnLabel');
+        const origIcon = btnIcon.className;
+        const origLabel = btnLabel.textContent;
+        btnIcon.className = 'fa-solid fa-spinner fa-spin';
+        btnLabel.textContent = '定位採樣中...';
+
+        try {
+          if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            AppState.geo.diagType = 'warn';
+            AppState.geo.diagMessage = '目前非 HTTPS 安全連線，瀏覽器可能封鎖 GPS；建議部署至 HTTPS 網址或直接選擇雙北行政區。';
+            UI.renderGeoHeader();
+            UI.showToast('非 HTTPS 環境可能限制 GPS，請改用行政區選單', 'error');
+            return;
+          }
+
+          const perm = await PrecisionGeoEngine.queryPermissionState();
+          if (perm === 'denied') {
+            AppState.geo.diagType = 'warn';
+            AppState.geo.diagMessage = '瀏覽器或外層框架已封鎖位置權限：請至網址列網站設定開啟「位置」，或直接點選雙北行政區。';
+            UI.renderGeoHeader();
+            UI.showToast('位置權限遭封鎖，請於瀏覽器權限設定開啟或改選行政區', 'error');
+            return;
+          }
+
+          const best = await PrecisionGeoEngine.acquirePrecisePosition(statusText => {
+            btnLabel.textContent = statusText.length > 14 ? '精準收斂中...' : statusText;
+          });
+
+          if (!best || !Number.isFinite(best.lat) || !Number.isFinite(best.lng)) {
+            throw new Error('NO_COORDS');
+          }
+
+          const { district, distanceKm } = PrecisionGeoEngine.findNearestDistrict(best.lat, best.lng);
+          const isPrecise = best.accuracy <= 100;
+          const distText = distanceKm < 1
+            ? `距${district.cityName}${district.name}中心約 ${Math.round(distanceKm * 1000)}m`
+            : `距${district.cityName}${district.name}中心約 ${distanceKm.toFixed(1)}km`;
+
+          AppState.geo.mode = isPrecise ? 'gps_precise' : 'gps_coarse';
+          AppState.geo.districtId = district.id;
+          AppState.geo.lat = best.lat;
+          AppState.geo.lng = best.lng;
+          AppState.geo.accuracy = best.accuracy;
+          AppState.geo.label = `${district.cityName} ${district.name}（${isPrecise ? '精準 GPS' : '裝置定位'}）`;
+          AppState.geo.nearestDistrictLabel = `${district.tag}（${distText}）`;
+          AppState.geo.diagType = isPrecise ? 'ok' : 'warn';
+          AppState.geo.diagMessage = isPrecise
+            ? `已完成高精準度 GPS 定位（誤差 ±${best.accuracy}m），${distText}。`
+            : `已取得裝置座標（誤差 ±${best.accuracy}m）；若在室內或高樓，可至空曠處再按一次或直接選區。`;
+
+          UI.populateDistrictSelects();
+          UI.renderGeoHeader();
+          UI.showToast(`已定位至 ${district.cityName}${district.name}（±${best.accuracy}m）`, 'success');
+        } catch (err) {
+          AppState.geo.diagType = 'warn';
+          if (err && err.code === 1) {
+            AppState.geo.diagMessage = '定位權限未允許或被內層框架限制：請檢查瀏覽器/手機定位權限，或直接切換雙北 41 區。';
+            UI.showToast('未取得定位權限，已保留目前行政區，可直接點選區域', 'error');
+          } else if (err && err.code === 3) {
+            AppState.geo.diagMessage = 'GPS 訊號逾時：室內或收訊較弱處較難抓衛星，建議改用雙北行政區快速選單。';
+            UI.showToast('GPS 定位逾時，可直接改用雙北行政區選單', 'info');
+          } else {
+            AppState.geo.diagMessage = '目前環境無法取得 GPS 座標（常見於受限內嵌框或未開啟定位服務），可直接選區使用。';
+            UI.showToast('無法取得 GPS 座標，可直接選擇雙北行政區', 'info');
+          }
+          UI.renderGeoHeader();
+        } finally {
+          btnIcon.className = origIcon;
+          btnLabel.textContent = origLabel;
+          isLocating = false;
+        }
+      }
+
+      function recordHistory(entry) {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        AppState.history.unshift({
+          ...entry,
+          location: AppState.geo.label,
+          timeLabel: `${hh}:${mm}`
+        });
+        AppState.history = AppState.history.slice(0, 30);
+        StorageManager.saveHistory(AppState.history);
+        UI.renderHistoryAndStats();
+      }
+
+      function spinSingle() {
+        if (AppState.isSpinning) return;
+        const pool = RecommendationEngine.buildActivePool();
+        if (pool.length === 0) {
+          UI.showToast('目前條件下沒有符合的餐點，請放寬條件或還原排除項目', 'error');
+          return;
+        }
+
+        const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const finalItem = RecommendationEngine.pickWeightedItem(
+          pool,
+          AppState.result.singleItem ? AppState.result.singleItem.id : null
+        );
+
+        if (prefersReduced) {
+          UI.renderSingleResult(finalItem, false);
+          SoundEngine.playWin();
+          const catObj = FoodCatalog.CATEGORIES.find(c => c.id === finalItem.category);
+          recordHistory({
+            title: finalItem.name,
+            emoji: finalItem.emoji,
+            categoryName: finalItem.isFavorite ? '雙北口袋愛店' : (catObj ? catObj.name : '美食決策')
+          });
+          return;
+        }
+
+        AppState.isSpinning = true;
+        const icon = $('spinIconSingle');
+        if (icon) icon.classList.add('fa-spin');
+
+        $('singleResultView').classList.remove('hidden');
+        $('comboResultView').classList.add('hidden');
+        $('resultModeTag').innerHTML = '<i class="fa-solid fa-dice fa-spin"></i> 正在雙北美食庫中隨機挑選...';
+
+        const duration = 680;
+        const startTime = performance.now();
+        let lastTickAt = 0;
+
+        function frame(now) {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+
+          if (now - lastTickAt >= 68 + progress * 90) {
+            const temp = pool[Math.floor(Math.random() * pool.length)];
+            UI.renderSingleResult(temp, true);
+            SoundEngine.playTick();
+            lastTickAt = now;
+          }
+
+          if (progress < 1) {
+            requestAnimationFrame(frame);
+          } else {
+            AppState.isSpinning = false;
+            if (icon) icon.classList.remove('fa-spin');
+            UI.renderSingleResult(finalItem, false);
+            SoundEngine.playWin();
+            const catObj = FoodCatalog.CATEGORIES.find(c => c.id === finalItem.category);
+            recordHistory({
+              title: finalItem.name,
+              emoji: finalItem.emoji,
+              categoryName: finalItem.isFavorite ? '雙北口袋愛店' : (catObj ? catObj.name : '美食決策')
+            });
+          }
+        }
+
+        requestAnimationFrame(frame);
+      }
+
+      function spinCombo() {
+        if (AppState.isSpinning) return;
+        const mainPool = RecommendationEngine.buildActivePool().filter(x => x.role !== 'dessert' && x.role !== 'drink');
+        const effectiveMainPool = mainPool.length > 0 ? mainPool : RecommendationEngine.buildActivePool();
+        const sidePool = RecommendationEngine.getSweetDrinkSidePool();
+
+        if (effectiveMainPool.length === 0 || sidePool.length === 0) {
+          UI.showToast('目前候選池不足以配成一套，請重設條件或還原排除項目', 'error');
+          return;
+        }
+
+        const mainItem = RecommendationEngine.pickWeightedItem(effectiveMainPool);
+        const sideItem = RecommendationEngine.pickWeightedItem(sidePool);
+
+        UI.renderComboResult(mainItem, sideItem);
+        SoundEngine.playWin();
+        recordHistory({
+          title: `套餐：${mainItem.name} ＋ ${sideItem.name}`,
+          emoji: '🍱',
+          categoryName: '主餐＋甜點/飲品套餐'
+        });
+        UI.showToast('已為你配好主餐＋甜點/飲料套餐！', 'success');
+      }
+
+      function applyMoodPreset(mood) {
+        AppState.filters.categories.clear();
+        AppState.filters.budget = 'all';
+
+        if (mood === 'quick') {
+          AppState.filters.budget = '1';
+          ['taiwanese', 'brunch_light', 'western_burger'].forEach(c => AppState.filters.categories.add(c));
+        } else if (mood === 'sweet') {
+          ['dessert_ice', 'drink_cafe'].forEach(c => AppState.filters.categories.add(c));
+        } else if (mood === 'latenight') {
+          AppState.filters.timeSlot = 'latenight';
+          ['latenight_snack', 'taiwanese', 'bbq_izakaya', 'dessert_ice'].forEach(c => AppState.filters.categories.add(c));
+        } else if (mood === 'treat') {
+          AppState.filters.budget = '3';
+          ['hotpot_exotic', 'bbq_izakaya', 'japanese', 'dessert_ice'].forEach(c => AppState.filters.categories.add(c));
+        }
+
+        syncFilterButtonsUI();
+        UI.renderCategoryButtons();
+        UI.renderPoolStatusAndDrawer();
+        UI.showToast('已套用情境條件，可直接按抽籤！', 'info');
+      }
+
+      function syncFilterButtonsUI() {
+        document.querySelectorAll('.filter-timeslot').forEach(btn => {
+          const active = btn.dataset.timeslot === AppState.filters.timeSlot;
+          btn.className = `filter-timeslot py-2 px-2 rounded-xl text-xs border transition active:scale-95 ${
+            active
+              ? 'active font-bold border-brand-500 bg-brand-500/15 text-amber-700 dark:text-brand-400'
+              : 'font-medium border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800'
+          }`;
+        });
+
+        document.querySelectorAll('.filter-budget').forEach(btn => {
+          const active = String(btn.dataset.budget) === String(AppState.filters.budget);
+          btn.className = `filter-budget py-2 px-1 rounded-xl text-xs border transition active:scale-95 ${
+            active
+              ? 'active font-bold border-brand-500 bg-brand-500/15 text-amber-700 dark:text-brand-400'
+              : 'font-medium border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800'
+          }`;
+        });
+
+        document.querySelectorAll('.filter-radius').forEach(btn => {
+          const active = btn.dataset.radius === AppState.filters.radius;
+          btn.className = `filter-radius py-2 px-1 rounded-xl text-xs border transition active:scale-95 ${
+            active
+              ? 'active font-bold border-brand-500 bg-brand-500/15 text-amber-700 dark:text-brand-400'
+              : 'font-medium border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-surface-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-surface-800'
+          }`;
+        });
+      }
+
+      function copyTextToClipboard(text, successMsg) {
+        try {
+          if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard.writeText(text).then(
+              () => UI.showToast(successMsg, 'success'),
+              () => fallbackCopy(text, successMsg)
+            );
+          } else {
+            fallbackCopy(text, successMsg);
+          }
+        } catch (e) {
+          fallbackCopy(text, successMsg);
+        }
+      }
+
+      function fallbackCopy(text, successMsg) {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          UI.showToast(successMsg, 'success');
+        } catch (e) {
+          UI.showToast('複製失敗，請手動選取複製', 'error');
+        }
+      }
+
+      function bindEvents() {
+        // 主題與音效與全螢幕與複製原始碼
+        $('btnToggleTheme').addEventListener('click', () => {
+          UI.applyTheme(AppState.theme === 'dark' ? 'light' : 'dark');
+        });
+
+        $('btnToggleSound').addEventListener('click', () => {
+          const on = SoundEngine.toggle();
+          $('soundIcon').className = on ? 'fa-solid fa-volume-high text-brand-500' : 'fa-solid fa-volume-xmark text-slate-400';
+          $('soundLabel').textContent = on ? '音效開' : '已靜音';
+          UI.showToast(on ? '已開啟音效' : '已切換為靜音', 'info');
+        });
+
+        $('btnFullscreen').addEventListener('click', () => {
+          try {
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen().catch(() => {
+                UI.showToast('目前環境不支援全螢幕或已被框架限制', 'info');
+              });
+            } else {
+              document.exitFullscreen().catch(() => {});
+            }
+          } catch (e) {
+            UI.showToast('目前環境不支援全螢幕', 'info');
+          }
+        });
+
+        $('btnCopySource').addEventListener('click', () => {
+          const fullHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+          copyTextToClipboard(fullHtml, '已複製完整 index.html 原始碼');
+        });
+
+        // 定位與雙北 41 區控制
+        $('btnDetectGPS').addEventListener('click', handlePreciseGPS);
+        $('btnMobileGPS').addEventListener('click', handlePreciseGPS);
+
+        $('selectCity').addEventListener('change', () => {
+          UI.populateDistrictSelects();
+          const chosenId = $('selectDistrict').value;
+          if (chosenId) setDistrictById(chosenId, '已切換行政區基準座標');
+        });
+
+        $('selectDistrict').addEventListener('change', () => {
+          const chosenId = $('selectDistrict').value;
+          if (chosenId) setDistrictById(chosenId, '已切換行政區基準座標');
+        });
+
+        document.querySelectorAll('.quick-loc-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            setDistrictById(btn.dataset.quickLoc, `已跳轉至 ${btn.textContent.trim()}`);
+          });
+        });
+
+        // 情境、時段、料理、預算、半徑與重設
+        document.querySelectorAll('.mood-btn').forEach(btn => {
+          btn.addEventListener('click', () => applyMoodPreset(btn.dataset.mood));
+        });
+
+        $('btnAutoTimeSlot').addEventListener('click', () => {
+          const hr = new Date().getHours();
+          let slot = 'lunch';
+          if (hr >= 5 && hr < 11) slot = 'breakfast';
+          else if (hr >= 11 && hr < 14) slot = 'lunch';
+          else if (hr >= 14 && hr < 17) slot = 'afternoon';
+          else if (hr >= 17 && hr < 22) slot = 'dinner';
+          else slot = 'latenight';
+          AppState.filters.timeSlot = slot;
+          syncFilterButtonsUI();
+          UI.renderPoolStatusAndDrawer();
+          UI.showToast(`依目前時間（${hr}:00）自動推薦時段`, 'info');
+        });
+
+        document.querySelectorAll('.filter-timeslot').forEach(btn => {
+          btn.addEventListener('click', () => {
+            AppState.filters.timeSlot = btn.dataset.timeslot;
+            syncFilterButtonsUI();
+            UI.renderPoolStatusAndDrawer();
+          });
+        });
+
+        $('categoryGrid').addEventListener('click', e => {
+          const btn = e.target.closest('.filter-category');
+          if (!btn) return;
+          const catId = btn.dataset.category;
+          if (AppState.filters.categories.has(catId)) AppState.filters.categories.delete(catId);
+          else AppState.filters.categories.add(catId);
+          UI.renderCategoryButtons();
+          UI.renderPoolStatusAndDrawer();
+        });
+
+        $('btnClearCategories').addEventListener('click', () => {
+          AppState.filters.categories.clear();
+          UI.renderCategoryButtons();
+          UI.renderPoolStatusAndDrawer();
+        });
+
+        document.querySelectorAll('.filter-budget').forEach(btn => {
+          btn.addEventListener('click', () => {
+            AppState.filters.budget = btn.dataset.budget;
+            syncFilterButtonsUI();
+            UI.renderPoolStatusAndDrawer();
+          });
+        });
+
+        document.querySelectorAll('.filter-radius').forEach(btn => {
+          btn.addEventListener('click', () => {
+            AppState.filters.radius = btn.dataset.radius;
+            syncFilterButtonsUI();
+            UI.syncResultMapLinks();
+          });
+        });
+
+        $('btnResetFilters').addEventListener('click', () => {
+          AppState.filters.timeSlot = 'all';
+          AppState.filters.categories.clear();
+          AppState.filters.budget = 'all';
+          AppState.filters.radius = '1km';
+          AppState.filters.excludedIds.clear();
+          AppState.filters.poolSearchQuery = '';
+          $('poolSearchInput').value = '';
+          syncFilterButtonsUI();
+          UI.renderCategoryButtons();
+          UI.renderPoolStatusAndDrawer();
+          UI.showToast('已重設所有篩選條件', 'success');
+        });
+
+        // 排除不想吃抽屜
+        $('btnTogglePoolDrawer').addEventListener('click', () => {
+          const drawer = $('poolDrawer');
+          const expanded = drawer.classList.toggle('hidden') === false;
+          $('btnTogglePoolDrawer').setAttribute('aria-expanded', String(expanded));
+          $('poolDrawerBtnText').textContent = expanded ? '收合清單' : '管理 / 排除不想吃';
+        });
+
+        $('poolSearchInput').addEventListener('input', e => {
+          AppState.filters.poolSearchQuery = e.target.value;
+          UI.renderPoolStatusAndDrawer();
+        });
+
+        $('poolChecklist').addEventListener('change', e => {
+          const cb = e.target.closest('.pool-item-checkbox');
+          if (!cb) return;
+          const id = cb.dataset.poolId;
+          if (cb.checked) AppState.filters.excludedIds.delete(id);
+          else AppState.filters.excludedIds.add(id);
+          UI.renderPoolStatusAndDrawer();
+        });
+
+        $('btnSelectAllPool').addEventListener('click', () => {
+          AppState.filters.excludedIds.clear();
+          UI.renderPoolStatusAndDrawer();
+        });
+
+        $('btnRestoreExcluded').addEventListener('click', () => {
+          AppState.filters.excludedIds.clear();
+          UI.renderPoolStatusAndDrawer();
+          UI.showToast('已還原全部候選餐點', 'success');
+        });
+
+        $('btnQuickUndoExclude').addEventListener('click', () => {
+          AppState.filters.excludedIds.clear();
+          UI.renderPoolStatusAndDrawer();
+          UI.showToast('已復原所有排除項目', 'success');
+        });
+
+        // 抽籤按鈕（桌機 + 手機）
+        $('btnSpinSingle').addEventListener('click', spinSingle);
+        $('btnMobileSpinSingle').addEventListener('click', spinSingle);
+        $('btnSpinCombo').addEventListener('click', spinCombo);
+        $('btnMobileSpinCombo').addEventListener('click', spinCombo);
+
+        // 收藏與揪團
+        $('btnFavResult').addEventListener('click', () => {
+          if (AppState.result.mode === 'combo' && AppState.result.comboMain) {
+            const m = AppState.result.comboMain;
+            const s = AppState.result.comboSide;
+            const title = s ? `${m.name} + ${s.name}` : m.name;
+            if (!AppState.favorites.some(f => f.name === title)) {
+              AppState.favorites.unshift({
+                id: `fav-${Date.now()}`,
+                name: title.slice(0, 35),
+                districtId: AppState.geo.districtId,
+                note: '套餐組合收藏',
+                keyword: m.keyword,
+                emoji: m.emoji
+              });
+              StorageManager.saveFavorites(AppState.favorites);
+              UI.renderFavorites();
+              UI.renderPoolStatusAndDrawer();
+              UI.showToast('已加入雙北口袋名單！', 'success');
+            } else {
+              UI.showToast('這組餐點已在口袋名單中', 'info');
+            }
+            return;
+          }
+
+          const item = AppState.result.singleItem;
+          if (!item) {
+            UI.showToast('請先抽出一道餐點再收藏', 'info');
+            return;
+          }
+          if (!AppState.favorites.some(f => f.name === item.name)) {
+            AppState.favorites.unshift({
+              id: `fav-${Date.now()}`,
+              name: item.name,
+              districtId: AppState.geo.districtId,
+              note: (item.tags && item.tags[0]) || '精選推薦',
+              keyword: item.keyword,
+              emoji: item.emoji
+            });
+            StorageManager.saveFavorites(AppState.favorites);
+            UI.renderFavorites();
+            UI.renderPoolStatusAndDrawer();
+            UI.showToast(`已將「${item.name}」加入口袋名單！`, 'success');
+          } else {
+            UI.showToast('已在口袋名單中囉', 'info');
+          }
+        });
+
+        $('btnShareInvite').addEventListener('click', () => {
+          let inviteText = '';
+          if (AppState.result.mode === 'combo' && AppState.result.comboMain && AppState.result.comboSide) {
+            inviteText = `📍 地點：${AppState.geo.label}（半徑 ${AppState.filters.radius}）\n🍽️ 主餐：${AppState.result.comboMain.emoji} ${AppState.result.comboMain.name}\n🍨 甜點/飲品：${AppState.result.comboSide.emoji} ${AppState.result.comboSide.name}\n要一起吃這套嗎？`;
+          } else if (AppState.result.singleItem) {
+            const it = AppState.result.singleItem;
+            inviteText = `📍 地點：${AppState.geo.label}（半徑 ${AppState.filters.radius}）\n${it.emoji} 今天吃：${it.name}\n有人要一起去嗎？`;
+          } else {
+            inviteText = `📍 地點：${AppState.geo.label}\n正在用「雙北今天吃什麼」挑餐廳，一起來決定吃什麼吧！`;
+          }
+          copyTextToClipboard(inviteText, '已複製揪團訊息，可直接貼到 LINE / Discord！');
+        });
+
+        // 口袋名單與歷史分頁
+        $('tabFavorites').addEventListener('click', () => {
+          $('panelFavorites').classList.remove('hidden');
+          $('panelHistory').classList.add('hidden');
+          $('tabFavorites').className = 'px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-brand-500 text-slate-950 transition active:scale-95 flex items-center gap-1.5';
+          $('tabHistory').className = 'px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-surface-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition active:scale-95 flex items-center gap-1.5';
+        });
+
+        $('tabHistory').addEventListener('click', () => {
+          $('panelHistory').classList.remove('hidden');
+          $('panelFavorites').classList.add('hidden');
+          $('tabHistory').className = 'px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-brand-500 text-slate-950 transition active:scale-95 flex items-center gap-1.5';
+          $('tabFavorites').className = 'px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-surface-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition active:scale-95 flex items-center gap-1.5';
+        });
+
+        document.querySelectorAll('.weight-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            AppState.filters.favoriteWeight = Number(btn.dataset.weight);
+            document.querySelectorAll('.weight-btn').forEach(b => {
+              const active = Number(b.dataset.weight) === AppState.filters.favoriteWeight;
+              b.className = `weight-btn px-2.5 py-1 rounded-lg text-xs border active:scale-95 ${
+                active
+                  ? 'active font-bold bg-brand-500/20 text-amber-700 dark:text-brand-400 border-brand-500'
+                  : 'font-medium bg-white dark:bg-surface-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+              }`;
+            });
+            UI.renderPoolStatusAndDrawer();
+          });
+        });
+
+        $('formAddFavorite').addEventListener('submit', e => {
+          e.preventDefault();
+          const name = $('favNameInput').value.trim();
+          if (!name) return;
+          const districtId = $('favDistrictInput').value;
+          const note = $('favNoteInput').value.trim();
+          AppState.favorites.unshift({
+            id: `fav-${Date.now()}`,
+            name,
+            districtId,
+            note,
+            keyword: name,
+            emoji: '⭐'
+          });
+          StorageManager.saveFavorites(AppState.favorites);
+          $('favNameInput').value = '';
+          $('favNoteInput').value = '';
+          UI.renderFavorites();
+          UI.renderPoolStatusAndDrawer();
+          UI.showToast(`已新增「${name}」至口袋名單`, 'success');
+        });
+
+        $('favoritesContainer').addEventListener('click', e => {
+          const btn = e.target.closest('.btn-del-fav');
+          if (!btn) return;
+          const id = btn.dataset.delFav;
+          AppState.favorites = AppState.favorites.filter(f => f.id !== id);
+          StorageManager.saveFavorites(AppState.favorites);
+          UI.renderFavorites();
+          UI.renderPoolStatusAndDrawer();
+          UI.showToast('已移除該口袋名單項目', 'info');
+        });
+
+        $('btnExportJSON').addEventListener('click', () => {
+          try {
+            const blob = new Blob([JSON.stringify(AppState.favorites, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'shuangbei-favorites.json';
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            UI.showToast('已匯出口袋名單 JSON 備份', 'success');
+          } catch (err) {
+            UI.showToast('匯出失敗，請稍後再試', 'error');
+          }
+        });
+
+        $('inputImportJSON').addEventListener('change', e => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = ev => {
+            try {
+              const parsed = JSON.parse(String(ev.target.result || ''));
+              const normalized = StorageManager.validateAndNormalizeFavorites(parsed);
+              AppState.favorites = normalized;
+              StorageManager.saveFavorites(AppState.favorites);
+              UI.renderFavorites();
+              UI.renderPoolStatusAndDrawer();
+              UI.showToast(`成功匯入 ${normalized.length} 筆口袋名單！`, 'success');
+            } catch (err) {
+              UI.showToast(`JSON 格式無效：${err.message}`, 'error');
+            } finally {
+              e.target.value = '';
+            }
+          };
+          reader.onerror = () => {
+            UI.showToast('讀取檔案時發生錯誤', 'error');
+            e.target.value = '';
+          };
+          reader.readAsText(file);
+        });
+
+        $('btnClearHistory').addEventListener('click', () => {
+          AppState.history = [];
+          StorageManager.saveHistory([]);
+          UI.renderHistoryAndStats();
+          UI.showToast('已清空歷史抽籤紀錄', 'info');
+        });
+
+        // 桌機鍵盤快捷鍵（Space 抽一餐、Esc 收合抽屜）
+        document.addEventListener('keydown', e => {
+          const tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+          const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select';
+          if (e.code === 'Space' && !isTyping) {
+            e.preventDefault();
+            spinSingle();
+          } else if (e.code === 'Escape') {
+            const drawer = $('poolDrawer');
+            if (drawer && !drawer.classList.contains('hidden')) {
+              drawer.classList.add('hidden');
+              $('btnTogglePoolDrawer').setAttribute('aria-expanded', 'false');
+              $('poolDrawerBtnText').textContent = '管理 / 排除不想吃';
+            }
+          }
+        });
+      }
+
+      function init() {
+        UI.applyTheme(AppState.theme);
+        UI.populateDistrictSelects();
+        UI.renderGeoHeader();
+        UI.renderCategoryButtons();
+        syncFilterButtonsUI();
+        UI.renderPoolStatusAndDrawer();
+        UI.renderFavorites();
+        UI.renderHistoryAndStats();
+        bindEvents();
+      }
+
+      return { init };
+    })();
+
+    window.addEventListener('DOMContentLoaded', Controller.init);
+  </script>
+</body>
+</html>
